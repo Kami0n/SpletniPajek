@@ -51,7 +51,13 @@ def prenasanjeVsebineStrani(webAddress):
     # vse URl se hrani v kanonični obliki -> oblika brez parametrov, napak..
     
 
+# *.gov.si
+# gov.si,
+# evem.gov.si,
+# e-uprava.gov.si and
+# e-prostor.gov.si.
 
+# iskanje v ŠIRINO! breadth-first
 
 WEB_PAGE_ADDRESS = "http://evem.gov.si"
 WEB_DRIVER_LOCATION = "D:/Fakulteta/2 stopnja/2sem/IEPS/1seminar/chromedriver_win32/chromedriver"
@@ -67,6 +73,20 @@ chrome_options.add_argument("user-agent=fri-wier-vipavska-burja")
 prenasanjeVsebineStrani(WEB_PAGE_ADDRESS)
 
 
+"""
+začetne strani so v tabeli page, damo da so tipa frontier
+izvaja se v rangu 3-4 dni da rata 50k strani
+eni so delali tako da so naredili skupno bazo, in so vsak pri sebi pognali pajka
+ne rabimo oddat tabel image in page data
+sheme lahko razširjamo, osbtoječe sheme pa ne spreminjamo iz brišemo
 
-# testna sprememba
-#testna sprememba 2
+upošteval bo commite, ki so do roka
+če je baza prevelika lahko damo link (načeloma naj ne bi bila)
+lahko programiramo v kirem jeziku in okolju želimo, baza pa naj bo taka kot je definirana
+
+če je stran .ppt .doc .pdf lahko uznačemo kot  page data
+lahko gledamo končnice, če pa končnice ni lahko pogledamo v head kakšen je data type
+
+vaje v naprej bojo konzultacijske razen primera, če kdo na slack napiše da bi rad kakšno razlago
+
+"""
