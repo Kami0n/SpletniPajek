@@ -12,6 +12,8 @@ from urllib.parse import urlparse
 from reppy import Robots
 import urlcanon
 
+import url
+
 TIMEOUT = 5
 RENDERTIMEOUT = 5
 start_time = time.time()
@@ -116,7 +118,8 @@ initFrontier(seedArray)
 
 # GLAVNA ZANKA
 print("Zacenjam zanko")
-while(urlId := getNextUrl()): #vzames naslednji url iz baze
+urlId = getNextUrl()
+while(urlId): #vzames naslednji url iz baze
     # zakleni ta pridobljen URL
     databasePutConn("UPDATE crawldb.page SET page_type_code='PROCESSING' WHERE id=%s AND urL=%s",(urlId[0], urlId[1]))
     nextUrl = urlId[1]
@@ -176,6 +179,7 @@ while(urlId := getNextUrl()): #vzames naslednji url iz baze
     
     # spremeni iz PROCESSING v HTML/BINARY/DUPLICATE
     databasePutConn("UPDATE crawldb.page SET page_type_code='HTML' WHERE id=%s AND urL=%s",(urlId[0], urlId[1]))
+    urlId = getNextUrl()
 
 
 #lock = threading.Lock()

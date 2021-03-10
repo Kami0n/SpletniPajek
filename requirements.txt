@@ -1,3 +1,5 @@
-
+selenium-wire
 reppy
 psycopg2
+urlcanon
+url

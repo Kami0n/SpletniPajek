@@ -1,0 +1,6 @@
+Navodila za instalacijo:
+
+v tej mapi pozeni cmd, nato zazeni ukaz:
+pip install .
+
+Dela samo do python 3.7!
