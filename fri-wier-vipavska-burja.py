@@ -24,19 +24,19 @@ chrome_options.add_argument("--headless")
 chrome_options.add_argument("user-agent=fri-wier-vipavska-burja")
 driver = webdriver.Chrome(WEB_DRIVER_LOCATION, options=chrome_options)
 
-def databasePutConn(stringToExecute):
+def databasePutConn(stringToExecute, params=()):
     conn = psycopg2.connect(host="localhost", user="user", password="friWIERvipavskaBurja")
     conn.autocommit = True
     cur = conn.cursor()
-    cur.execute(stringToExecute)
+    cur.execute(stringToExecute, params)
     cur.close()
     conn.close()
 
-def databaseGetConn(stringToExecute):
+def databaseGetConn(stringToExecute, params=()):
     conn = psycopg2.connect(host="localhost", user="user", password="friWIERvipavskaBurja")
     conn.autocommit = True
     cur = conn.cursor()
-    cur.execute(stringToExecute)
+    cur.execute(stringToExecute, params)
     answer = cur.fetchall()
     cur.close()
     conn.close()
@@ -71,7 +71,7 @@ def getNextUrl():
     url = url[0]
     
     # zakleni ta pridobljen URL
-    databasePutConn("UPDATE crawldb.page SET page_type_code='PROCESSING' WHERE id="+str(url[0])+" AND urL='"+url[1]+"'")
+    databasePutConn("UPDATE crawldb.page SET page_type_code='PROCESSING' WHERE id=%s AND urL=%s",(url[0], url[1]))
     
     return url[1]
 
@@ -81,8 +81,9 @@ def checkRootSite(domain):
 
 def fetchPageContent(webAddress, driver):
     global start_time
+    
     razlikaCasa = (time.time() - start_time)
-    if razlikaCasa < TIMEOUT :
+    if razlikaCasa < TIMEOUT : # in če je isti IP !! -> drugače ni treba timeouta
         print("TIMEOUT")
         time.sleep(TIMEOUT - razlikaCasa )
     
@@ -90,13 +91,13 @@ def fetchPageContent(webAddress, driver):
     
     driver.get(webAddress)
     # Timeout needed for Web page to render (read more about it)
-    time.sleep(TIMEOUT)
+    #time.sleep(5)
+    
     content = driver.page_source
     #print(f"Retrieved Web content (truncated to first 900 chars): \n\n'\n{html[:900]}\n'\n")
     
     start_time = time.time()
     return content
-
 
 
 seedArray = ['https://gov.si','https://evem.gov.si','https://e-uprava.gov.si','https://e-prostor.gov.si']
@@ -106,44 +107,50 @@ nextUrl = getNextUrl() #vzames prvi url iz baze
 print("Zacenjam zanko")
 while(nextUrl): # GLAVNA ZANKA
     
-    
-    # preveri ce stran ze imamo v site?
-    
+    robots = None
     domain = urlparse(nextUrl).netloc
-    if not checkRootSite(domain):
-        print("NEZNAN site, Fetching Robots")
+    if not checkRootSite(domain): # ali je root site (domain) ze v bazi
+        print("NEZNAN site: "+domain+"  Fetching Robots")
+        
         robotContent = fetchPageContent(nextUrl+'/robots.txt', driver)
+        robotContent = driver.find_elements_by_tag_name("body")[0].text # pridobi samo text, brez html znack
+        
+        if "Not Found" not in robotContent:
+            robots = Robots.parse(nextUrl+'/robots.txt', robotContent)
+            for sitemap in robots.sitemaps:
+                sitemapContent = fetchPageContent(sitemap, driver)
+            databasePutConn("INSERT INTO crawldb.site (domain, robots_content, sitemap_content) VALUES (%s,%s,%s)", (domain, robotContent, sitemapContent))
+        else:
+            databasePutConn("INSERT INTO crawldb.site (domain) VALUES (%s)", (domain,))
+        
+        # povezi page z site
+        databasePutConn("UPDATE crawldb.page SET site_id=(SELECT id FROM crawldb.site WHERE domain=%s) WHERE url=%s", (domain,nextUrl))
+    else:
+        print("ZNAN site: "+domain)
+        #load robots from DB
+        databaseGetConn("SELECT robots_content FROM crawldb.site WHERE domain=%s", (domain,))
         robots = Robots.parse(nextUrl+'/robots.txt', robotContent)
-        print(robots)
         
-        sitemapContent = fetchPageContent(nextUrl+'/sitemap.xml', driver)
+        # povezi page z site
+        databasePutConn("UPDATE crawldb.page SET site_id=(SELECT id FROM crawldb.site WHERE domain=%s) WHERE url=%s", (domain,nextUrl))
+    
+    # ali je dovoljeno da gremo na ta link
+    if robots is not None and robots.allowed(nextUrl, 'my-user-agent'):
+        # prenesi stran
+        content  = fetchPageContent(nextUrl, driver)
+    
+        # povezave ki so v html kodi -> href & onclick (location.href)
+        # pravilno upoštevaj relativne URLje! -> načeloma piše v <head> baseurl ali og url
+        # detektiranje slik <img src="">
         
-        databasePutConn("INSERT INTO crawldb.site (domain, robots_content, sitemap_content) VALUES ('"+domain+"','"+robotContent+"','"+sitemapContent+"')")
-        
-    #else:
-        # load robots from DB
-    
-    
-    #if robots.allowed(nextUrl, 'my-user-agent'):
-    
-    # prenesi stran
-    #content  = fetchPageContent(nextUrl, driver)
-    
-    # povezave ki so v html kodi -> href & onclick (location.href)
-    # pravilno upoštevaj relativne URLje! -> načeloma piše v <head> baseurl ali og url
-    # detektiranje slik <img src="">
-    
-    """
-    for element in driver.find_elements_by_tag_name("a"):
-        href = element.get_attribute('href')
-        if href:
-            parsed_url = urlcanon.whatwg(href)
-            print(parsed_url)
-        
-    """
-    # return URLs
-    
-    # vse URl se hrani v kanonični obliki -> oblika brez parametrov, napak..
+        for element in driver.find_elements_by_tag_name("a"):
+            href = element.get_attribute('href')
+            if href:
+                parsed_url = urlcanon.whatwg(href)
+                print(parsed_url)
+                
+        # return URLs
+        # vse URl se hrani v kanonični obliki -> oblika brez # 
     
     nextUrl = getNextUrl() #vzames naslednji url iz baze
 
