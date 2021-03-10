@@ -11,6 +11,7 @@ from reppy import Robots
 import urlcanon
 
 TIMEOUT = 5
+RENDERTIMEOUT = 5
 start_time = time.time()
 
 NOTHREADS = 2
@@ -91,7 +92,7 @@ def fetchPageContent(webAddress, driver):
     
     driver.get(webAddress)
     # Timeout needed for Web page to render (read more about it)
-    #time.sleep(5)
+    time.sleep(RENDERTIMEOUT)
     
     content = driver.page_source
     #print(f"Retrieved Web content (truncated to first 900 chars): \n\n'\n{html[:900]}\n'\n")
@@ -99,13 +100,13 @@ def fetchPageContent(webAddress, driver):
     start_time = time.time()
     return content
 
-
 seedArray = ['https://gov.si','https://evem.gov.si','https://e-uprava.gov.si','https://e-prostor.gov.si']
 initFrontier(seedArray)
 
-nextUrl = getNextUrl() #vzames prvi url iz baze
+
+# GLAVNA ZANKA
 print("Zacenjam zanko")
-while(nextUrl): # GLAVNA ZANKA
+while(nextUrl := getNextUrl()): #vzames naslednji url iz baze
     
     robots = None
     domain = urlparse(nextUrl).netloc
@@ -138,23 +139,22 @@ while(nextUrl): # GLAVNA ZANKA
     if robots is not None and robots.allowed(nextUrl, 'my-user-agent'):
         # prenesi stran
         content  = fetchPageContent(nextUrl, driver)
-    
+        databasePutConn("UPDATE crawldb.page SET html_content=%s WHERE url=%s", (content,nextUrl))
+        
         # povezave ki so v html kodi -> href & onclick (location.href)
         # pravilno upoštevaj relativne URLje! -> načeloma piše v <head> baseurl ali og url
         # detektiranje slik <img src="">
         
         for element in driver.find_elements_by_tag_name("a"):
             href = element.get_attribute('href')
-            if href:
+            if href: # is href ok?
+                # preveri če je link na gov.si
+                # URL CANONIZATION
                 parsed_url = urlcanon.whatwg(href)
                 print(parsed_url)
                 
         # return URLs
         # vse URl se hrani v kanonični obliki -> oblika brez # 
-    
-    nextUrl = getNextUrl() #vzames naslednji url iz baze
-
-
 
 
 #lock = threading.Lock()
