@@ -100,6 +100,7 @@ def fetchPageContent(webAddress, driver):
         if driver.requests[i].response.status_code == 200 or driver.requests[i].response.status_code >= 400:
             break
         i+=1
+    
     # Timeout needed for Web page to render (read more about it)
     time.sleep(RENDERTIMEOUT)
     
@@ -107,7 +108,7 @@ def fetchPageContent(webAddress, driver):
     #print(f"Retrieved Web content (truncated to first 900 chars): \n\n'\n{html[:900]}\n'\n")
     
     start_time = time.time()
-    return content
+    return content, driver.requests[0].response.status_code
 
 seedArray = ['https://gov.si','https://evem.gov.si','https://e-uprava.gov.si','https://e-prostor.gov.si']
 initFrontier(seedArray)
@@ -126,13 +127,13 @@ while(urlId := getNextUrl()): #vzames naslednji url iz baze
     if not checkRootSite(domain): # ali je root site (domain) ze v bazi
         print("NEZNAN site: "+domain+"  Fetching Robots")
         
-        robotContent = fetchPageContent(nextUrl+'/robots.txt', driver)
+        robotContent, httpCode = fetchPageContent(nextUrl+'/robots.txt', driver)
         robotContent = driver.find_elements_by_tag_name("body")[0].text # pridobi samo text, brez html znack
         
         if "Not Found" not in robotContent:
             robots = Robots.parse(nextUrl+'/robots.txt', robotContent)
             for sitemap in robots.sitemaps:
-                sitemapContent = fetchPageContent(sitemap, driver)
+                sitemapContent, httpCode = fetchPageContent(sitemap, driver)
             databasePutConn("INSERT INTO crawldb.site (domain, robots_content, sitemap_content) VALUES (%s,%s,%s)", (domain, robotContent, sitemapContent))
         else:
             databasePutConn("INSERT INTO crawldb.site (domain) VALUES (%s)", (domain,))
@@ -151,11 +152,11 @@ while(urlId := getNextUrl()): #vzames naslednji url iz baze
     # ali je dovoljeno da gremo na ta link
     if robots is None or robots.allowed(nextUrl, 'my-user-agent'):
         # prenesi stran
-        content  = fetchPageContent(nextUrl, driver)
+        content, httpCode  = fetchPageContent(nextUrl, driver)
         
         # ugotovi kakšen tip je ta content!
         
-        databasePutConn("UPDATE crawldb.page SET html_content=%s WHERE url=%s", (content,nextUrl))
+        databasePutConn("UPDATE crawldb.page SET html_content=%s, http_status_code=%s WHERE url=%s", (content, httpCode, nextUrl))
         
         # povezave ki so v html kodi -> href & onclick (location.href)
         # pravilno upoštevaj relativne URLje! -> načeloma piše v <head> baseurl ali og url
@@ -191,3 +192,4 @@ print("KONCANO")
 # Ko stran končaš obdelovat -> spremeni pagetype iz processing v tip (html, binary,...)
 # preverajnje duplikatov. Sepravi če: gov.si/a -> =vsebina= <- evem.si/b (drugi linki vsebina ista) najlažje rešiš z hashom starni
 # razširi tabelo page s stolpvem hash (pole primerjaš)
+# hendlanje redirectov 302 !!
