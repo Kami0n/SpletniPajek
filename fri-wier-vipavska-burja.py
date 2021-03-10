@@ -16,7 +16,7 @@ start_time = time.time()
 
 NOTHREADS = 2
 
-WEB_DRIVER_LOCATION = "D:/Fakulteta/2 stopnja/2sem/IEPS/1seminar/chromedriver"
+WEB_DRIVER_LOCATION = "C:/Users/Toncaw/downloads/chromedriver"
 
 chrome_options = Options()
 # If you comment the following line, a browser will show ...
@@ -163,3 +163,11 @@ while(nextUrl := getNextUrl()): #vzames naslednji url iz baze
 
 driver.close()
 print("KONCANO")
+
+# TODO
+# URL KANONIZACIJA
+# preveri če je link na gov.si
+# zapis linkov v bazo (nastavi da je frontier)
+# Ko stran končaš obdelovat -> spremeni pagetype iz processing v tip (html, binary,...)
+# preverajnje duplikatov. Sepravi če: gov.si/a -> =vsebina= <- evem.si/b (drugi linki vsebina ista) najlažje rešiš z hashom starni
+# razširi tabelo page s stolpvem hash (pole primerjaš)
