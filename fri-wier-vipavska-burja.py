@@ -170,8 +170,8 @@ while(urlId): #vzames naslednji url iz baze
             if href: # is href ok?
                 # preveri če je link na gov.si
                 # URL CANONIZATION
-                parsed_url = url.parse(href).strip().canonical().utf8
-                #print(parsed_url)
+                parsed_url = url.parse(href).strip().defrag().canonical().utf8
+                print(parsed_url)
                 
         # return URLs
         # vse URl se hrani v kanonični obliki -> oblika brez # 
