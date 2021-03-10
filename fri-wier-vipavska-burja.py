@@ -1,6 +1,8 @@
 import time
-from selenium import webdriver
+from seleniumwire import webdriver
 from selenium.webdriver.chrome.options import Options
+#from selenium import webdriver
+#from selenium.webdriver.chrome.options import Options
 import concurrent.futures
 import threading
 import psycopg2
@@ -16,7 +18,7 @@ start_time = time.time()
 
 NOTHREADS = 2
 
-WEB_DRIVER_LOCATION = "C:/Users/Toncaw/downloads/chromedriver"
+WEB_DRIVER_LOCATION = "D:/Fakulteta/2 stopnja/2sem/IEPS/1seminar/chromedriver"
 
 chrome_options = Options()
 # If you comment the following line, a browser will show ...
@@ -53,7 +55,7 @@ def initFrontier(seed):
         postgres_insert_query = postgres_insert_query + "('FRONTIER', '"+domain+"'),"
     databasePutConn(postgres_insert_query[:-1])
     
-    print("Inicializacija Frontierja konacana")
+    print("Inicializacija Frontierja koncana")
 
 # page_type_code
     # 1 HTML
@@ -64,23 +66,17 @@ def initFrontier(seed):
 
 def getNextUrl():
     # pridobi naslednji URL
-    
     url = databaseGetConn("SELECT id,url FROM crawldb.page WHERE page_type_code='FRONTIER' ORDER BY id LIMIT 1 ")
     if not url:
         return None
-    
-    url = url[0]
-    
-    # zakleni ta pridobljen URL
-    databasePutConn("UPDATE crawldb.page SET page_type_code='PROCESSING' WHERE id=%s AND urL=%s",(url[0], url[1]))
-    
-    return url[1]
+    return url[0]
 
 def checkRootSite(domain):
     data = databaseGetConn("SELECT * FROM crawldb.site WHERE domain='"+domain+"'")
     return data
 
 def fetchPageContent(webAddress, driver):
+    del driver.requests # pobrisi requeste za nazaj, ker nas zanimajo samo trenutni!
     global start_time
     
     razlikaCasa = (time.time() - start_time)
@@ -91,6 +87,22 @@ def fetchPageContent(webAddress, driver):
     print(f"Retrieving content for web page URL '{webAddress}'")
     
     driver.get(webAddress)
+    
+    #for request in driver.requests:
+        #if request.response:
+            #print( request.url, request.response.status_code, request.response.headers['Content-Type'] )
+    #if driver.requests[0].response:
+        #print( driver.requests[0].url, driver.requests[0].response.status_code, driver.requests[0].response.headers['Content-Type'] )
+    
+    
+    i = 0
+    while True :
+        print( driver.requests[i].url, driver.requests[i].response.status_code, driver.requests[i].response.headers['Content-Type'] )
+        if driver.requests[i].response.status_code == 200:
+            break
+        i+=1
+        
+    
     # Timeout needed for Web page to render (read more about it)
     time.sleep(RENDERTIMEOUT)
     
@@ -106,10 +118,14 @@ initFrontier(seedArray)
 
 # GLAVNA ZANKA
 print("Zacenjam zanko")
-while(nextUrl := getNextUrl()): #vzames naslednji url iz baze
+while(urlId := getNextUrl()): #vzames naslednji url iz baze
+    # zakleni ta pridobljen URL
+    databasePutConn("UPDATE crawldb.page SET page_type_code='PROCESSING' WHERE id=%s AND urL=%s",(urlId[0], urlId[1]))
+    nextUrl = urlId[1]
     
     robots = None
     domain = urlparse(nextUrl).netloc
+    print(domain)
     if not checkRootSite(domain): # ali je root site (domain) ze v bazi
         print("NEZNAN site: "+domain+"  Fetching Robots")
         
@@ -136,9 +152,12 @@ while(nextUrl := getNextUrl()): #vzames naslednji url iz baze
         databasePutConn("UPDATE crawldb.page SET site_id=(SELECT id FROM crawldb.site WHERE domain=%s) WHERE url=%s", (domain,nextUrl))
     
     # ali je dovoljeno da gremo na ta link
-    if robots is not None and robots.allowed(nextUrl, 'my-user-agent'):
+    if robots is None or robots.allowed(nextUrl, 'my-user-agent'):
         # prenesi stran
         content  = fetchPageContent(nextUrl, driver)
+        
+        # ugotovi kakšen tip je ta content!
+        
         databasePutConn("UPDATE crawldb.page SET html_content=%s WHERE url=%s", (content,nextUrl))
         
         # povezave ki so v html kodi -> href & onclick (location.href)
@@ -151,10 +170,14 @@ while(nextUrl := getNextUrl()): #vzames naslednji url iz baze
                 # preveri če je link na gov.si
                 # URL CANONIZATION
                 parsed_url = urlcanon.whatwg(href)
-                print(parsed_url)
+                #print(parsed_url)
                 
         # return URLs
         # vse URl se hrani v kanonični obliki -> oblika brez # 
+        
+    
+    # spremeni iz PROCESSING v HTML/BINARY/DUPLICATE
+    databasePutConn("UPDATE crawldb.page SET page_type_code='HTML' WHERE id=%s AND urL=%s",(urlId[0], urlId[1]))
 
 
 #lock = threading.Lock()
