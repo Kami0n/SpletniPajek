@@ -94,15 +94,12 @@ def fetchPageContent(webAddress, driver):
     #if driver.requests[0].response:
         #print( driver.requests[0].url, driver.requests[0].response.status_code, driver.requests[0].response.headers['Content-Type'] )
     
-    
     i = 0
     while True :
         print( driver.requests[i].url, driver.requests[i].response.status_code, driver.requests[i].response.headers['Content-Type'] )
-        if driver.requests[i].response.status_code == 200:
+        if driver.requests[i].response.status_code == 200 or driver.requests[i].response.status_code >= 400:
             break
         i+=1
-        
-    
     # Timeout needed for Web page to render (read more about it)
     time.sleep(RENDERTIMEOUT)
     
