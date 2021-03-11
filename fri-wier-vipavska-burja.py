@@ -110,30 +110,45 @@ def fetchPageContent(webAddress, driver):
     #print(f"Retrieved Web content (truncated to first 900 chars): \n\n'\n{html[:900]}\n'\n")
     
     start_time = time.time()
-    return content, driver.requests[0].response.status_code
+    return content, driver.requests[0].response.status_code, driver.requests[0].response.headers['Content-Type']
+
+def urlCanonization(inputUrl):
+    
+    outputUrl = url.parse(inputUrl).strip().defrag().canonical().abspath().utf8
+    
+    return outputUrl.decode("utf-8")
+
+def saveUrlToDB(inputUrl):
+    try:
+        databasePutConn("INSERT INTO crawldb.page (page_type_code, url) VALUES ('FRONTIER', %s)",(inputUrl,))
+        print(inputUrl)
+    except:
+        print("URL ze v DB") # hendlanje podvojitev
+        # autoinceremnt id problem!! -> treba ugotovit kako dat nazaj
 
 seedArray = ['https://gov.si','https://evem.gov.si','https://e-uprava.gov.si','https://e-prostor.gov.si']
-initFrontier(seedArray)
-
+#initFrontier(seedArray)
 
 # GLAVNA ZANKA
 print("Zacenjam zanko")
 urlId = getNextUrl()
 while(urlId): #vzames naslednji url iz baze
     # zakleni ta pridobljen URL
-    databasePutConn("UPDATE crawldb.page SET page_type_code='PROCESSING' WHERE id=%s AND urL=%s",(urlId[0], urlId[1]))
+    #  accessed_time=%s time.time(),
+    databasePutConn("UPDATE crawldb.page SET page_type_code='PROCESSING' WHERE id=%s AND urL=%s",( urlId[0], urlId[1]))
     nextUrl = urlId[1]
+    print(nextUrl)
     
     robots = None
     domain = urlparse(nextUrl).netloc
-    print(domain)
+    
     if not checkRootSite(domain): # ali je root site (domain) ze v bazi
         print("NEZNAN site: "+domain+"  Fetching Robots")
         
         robotContent, httpCode = fetchPageContent(nextUrl+'/robots.txt', driver)
         robotContent = driver.find_elements_by_tag_name("body")[0].text # pridobi samo text, brez html znack
         
-        if "Not Found" not in robotContent:
+        if "Not Found" not in robotContent: # za razširit
             robots = Robots.parse(nextUrl+'/robots.txt', robotContent)
             for sitemap in robots.sitemaps:
                 sitemapContent, httpCode = fetchPageContent(sitemap, driver)
@@ -146,17 +161,18 @@ while(urlId): #vzames naslednji url iz baze
     else:
         print("ZNAN site: "+domain)
         #load robots from DB
-        databaseGetConn("SELECT robots_content FROM crawldb.site WHERE domain=%s", (domain,))
-        robots = Robots.parse(nextUrl+'/robots.txt', robotContent)
-        
+        robotContent = databaseGetConn("SELECT robots_content FROM crawldb.site WHERE domain=%s", (domain,))[0][0]
+        if robotContent is not None:
+            robots = Robots.parse(nextUrl+'/robots.txt', robotContent)
+        else:
+            robots = None
         # povezi page z site
         databasePutConn("UPDATE crawldb.page SET site_id=(SELECT id FROM crawldb.site WHERE domain=%s) WHERE url=%s", (domain,nextUrl))
     
     # ali je dovoljeno da gremo na ta link
     if robots is None or robots.allowed(nextUrl, 'my-user-agent'):
         # prenesi stran
-        content, httpCode  = fetchPageContent(nextUrl, driver)
-        
+        content, httpCode, contentType  = fetchPageContent(nextUrl, driver)
         # ugotovi kakšen tip je ta content!
         
         databasePutConn("UPDATE crawldb.page SET html_content=%s, http_status_code=%s WHERE url=%s", (content, httpCode, nextUrl))
@@ -167,33 +183,27 @@ while(urlId): #vzames naslednji url iz baze
         
         for element in driver.find_elements_by_tag_name("a"):
             href = element.get_attribute('href')
-            if href: # is href ok?
-                # preveri če je link na gov.si
-                # URL CANONIZATION
-                parsed_url = url.parse(href).strip().defrag().canonical().utf8
-                print(parsed_url)
-                
-        # return URLs
-        # vse URl se hrani v kanonični obliki -> oblika brez # 
-        
-    
+            if href: # is href not None?
+                parsed_url = urlCanonization(href) # URL CANONIZATION
+                # preveri če je link na gov.si, drugace se ga ne uposteva
+                if 'gov.si' in urlparse(parsed_url).netloc :
+                    saveUrlToDB(parsed_url) # save URLs to DB
+                    
     # spremeni iz PROCESSING v HTML/BINARY/DUPLICATE
     databasePutConn("UPDATE crawldb.page SET page_type_code='HTML' WHERE id=%s AND urL=%s",(urlId[0], urlId[1]))
     urlId = getNextUrl()
 
 
 #lock = threading.Lock()
-# iskanje v ŠIRINO! breadth-first -> FIFO
-
 
 driver.close()
 print("KONCANO")
 
 # TODO
-# URL KANONIZACIJA
-# preveri če je link na gov.si
-# zapis linkov v bazo (nastavi da je frontier)
-# Ko stran končaš obdelovat -> spremeni pagetype iz processing v tip (html, binary,...)
 # preverajnje duplikatov. Sepravi če: gov.si/a -> =vsebina= <- evem.si/b (drugi linki vsebina ista) najlažje rešiš z hashom starni
-# razširi tabelo page s stolpvem hash (pole primerjaš)
+# iskanje onclick povezav, a href ze dela
 # hendlanje redirectov 302 !!
+# pravilno upoštevaj relativne URLje! -> načeloma piše v <head> baseurl ali og url
+# detektiranje slik <img src="">
+
+# problem ko ostane stran zaklenjena, ce pajka izklopimo
