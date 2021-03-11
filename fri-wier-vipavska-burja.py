@@ -1,9 +1,11 @@
 import time
+import threading
+
+import psycopg2
+
 from seleniumwire import webdriver
 from selenium.webdriver.chrome.options import Options
-import concurrent.futures
-import threading
-import psycopg2
+
 import url
 from urllib.parse import urlparse
 from reppy import Robots
@@ -62,13 +64,6 @@ def initCrawler(seedArray):
         initFrontier(seedArray) # prvi start pajka
     else:
         initFrontierProcessing() # restart pajka
-
-# page_type_code
-    # 1 HTML
-    # 2 BINARY
-    # 3 DUPLICATE
-    # 4 FRONTIER
-    # 5 PROCESSING
 
 def getNextUrl():
     # pridobi naslednji URL
@@ -131,17 +126,12 @@ def saveUrlToDB(inputUrl):
         # autoinceremnt id problem!! -> treba ugotovit kako dat nazaj
 
 
-
-
-
 initCrawler(SEEDARRAY)
 
-# GLAVNA ZANKA
-print("Zacenjam zanko")
-urlId = getNextUrl()
-while(urlId): #vzames naslednji url iz baze
+urlId = getNextUrl() #vzames prvi url iz baze
+while(urlId):  # GLAVNA ZANKA
     # zakleni ta pridobljen URL
-    #  accessed_time=%s time.time(),
+    # TODO DODAJ ACCESSED TIME -> accessed_time=%s time.time(), -
     databasePutConn("UPDATE crawldb.page SET page_type_code='PROCESSING' WHERE id=%s AND urL=%s",( urlId[0], urlId[1]))
     nextUrl = urlId[1]
     print(nextUrl)
@@ -184,21 +174,21 @@ while(urlId): #vzames naslednji url iz baze
         
         databasePutConn("UPDATE crawldb.page SET html_content=%s, http_status_code=%s WHERE url=%s", (content, httpCode, nextUrl))
         
-        # povezave ki so v html kodi -> href & onclick (location.href)
-        # pravilno upoštevaj relativne URLje! -> načeloma piše v <head> baseurl ali og url
-        # detektiranje slik <img src="">
+        # povezave ki so v html kodi -> href & TODO onclick (location.href)
+        # pravilno upoštevaj relativne URLje! -> načeloma piše absoluti url v <head> baseurl ali og url
+        # TODO detektiranje slik <img src="">
         
         for element in driver.find_elements_by_tag_name("a"):
             href = element.get_attribute('href')
             if href: # is href not None?
                 parsed_url = urlCanonization(href) # URL CANONIZATION
                 # preveri če je link na gov.si, drugace se ga ne uposteva
-                if 'gov.si' in urlparse(parsed_url).netloc :
+                if 'gov.si' in urlparse(parsed_url).netloc : # TODO uporabi regular expression za preverjanje ce je stran v gov.si
                     saveUrlToDB(parsed_url) # save URLs to DB
                     
     # spremeni iz PROCESSING v HTML/BINARY/DUPLICATE
     databasePutConn("UPDATE crawldb.page SET page_type_code='HTML' WHERE id=%s AND urL=%s",(urlId[0], urlId[1]))
-    urlId = getNextUrl()
+    urlId = getNextUrl() # vzames naslednji url iz baze
 
 
 #lock = threading.Lock()
@@ -214,3 +204,11 @@ print("KONCANO")
 # detektiranje slik <img src="">
 
 # problem ko ostane stran zaklenjena, ce pajka izklopimo
+
+
+# page_type_code
+    # 1 HTML
+    # 2 BINARY
+    # 3 DUPLICATE
+    # 4 FRONTIER
+    # 5 PROCESSING
