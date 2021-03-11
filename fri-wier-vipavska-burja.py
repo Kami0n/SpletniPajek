@@ -1,25 +1,18 @@
 import time
 from seleniumwire import webdriver
 from selenium.webdriver.chrome.options import Options
-#from selenium import webdriver
-#from selenium.webdriver.chrome.options import Options
 import concurrent.futures
 import threading
 import psycopg2
-
-from urllib.parse import urlparse
-
-from reppy import Robots
-import urlcanon
-
 import url
+from urllib.parse import urlparse
+from reppy import Robots
 
 TIMEOUT = 5
 RENDERTIMEOUT = 5
 start_time = time.time()
 
 NOTHREADS = 2
-
 WEB_DRIVER_LOCATION = "D:/Fakulteta/2 stopnja/2sem/IEPS/1seminar/chromedriver"
 
 chrome_options = Options()
@@ -145,13 +138,13 @@ while(urlId): #vzames naslednji url iz baze
     if not checkRootSite(domain): # ali je root site (domain) ze v bazi
         print("NEZNAN site: "+domain+"  Fetching Robots")
         
-        robotContent, httpCode = fetchPageContent(nextUrl+'/robots.txt', driver)
+        robotContent, httpCode, contType = fetchPageContent(nextUrl+'/robots.txt', driver)
         robotContent = driver.find_elements_by_tag_name("body")[0].text # pridobi samo text, brez html znack
         
         if "Not Found" not in robotContent: # za razširit
             robots = Robots.parse(nextUrl+'/robots.txt', robotContent)
             for sitemap in robots.sitemaps:
-                sitemapContent, httpCode = fetchPageContent(sitemap, driver)
+                sitemapContent, httpCode, contType = fetchPageContent(sitemap, driver)
             databasePutConn("INSERT INTO crawldb.site (domain, robots_content, sitemap_content) VALUES (%s,%s,%s)", (domain, robotContent, sitemapContent))
         else:
             databasePutConn("INSERT INTO crawldb.site (domain) VALUES (%s)", (domain,))
