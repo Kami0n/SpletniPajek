@@ -14,6 +14,7 @@ start_time = time.time()
 
 NOTHREADS = 2
 WEB_DRIVER_LOCATION = "D:/Fakulteta/2 stopnja/2sem/IEPS/1seminar/chromedriver"
+SEEDARRAY = ['https://gov.si','https://evem.gov.si','https://e-uprava.gov.si','https://e-prostor.gov.si']
 
 chrome_options = Options()
 # If you comment the following line, a browser will show ...
@@ -51,6 +52,16 @@ def initFrontier(seed):
     databasePutConn(postgres_insert_query[:-1])
     
     print("Inicializacija Frontierja koncana")
+
+def initFrontierProcessing():
+    databasePutConn("UPDATE crawldb.page SET page_type_code='FRONTIER' WHERE page_type_code='PROCESSING'")
+
+def initCrawler(seedArray):
+    numberFronteir = databaseGetConn("SELECT COUNT(*) FROM crawldb.page WHERE page_type_code='FRONTIER'")[0][0]
+    if numberFronteir == 0:
+        initFrontier(seedArray) # prvi start pajka
+    else:
+        initFrontierProcessing() # restart pajka
 
 # page_type_code
     # 1 HTML
@@ -119,8 +130,11 @@ def saveUrlToDB(inputUrl):
         print("URL ze v DB") # hendlanje podvojitev
         # autoinceremnt id problem!! -> treba ugotovit kako dat nazaj
 
-seedArray = ['https://gov.si','https://evem.gov.si','https://e-uprava.gov.si','https://e-prostor.gov.si']
-#initFrontier(seedArray)
+
+
+
+
+initCrawler(SEEDARRAY)
 
 # GLAVNA ZANKA
 print("Zacenjam zanko")
