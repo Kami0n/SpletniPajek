@@ -159,15 +159,16 @@ def saveUrlToDB(inputUrl):
         # autoinceremnt id problem!! -> treba ugotovit kako dat nazaj
 
 
-"""
+
 def saveImgToDB(inputUrl):
     try:
-        databasePutConn("INSERT INTO crawldb.page (page_type_code, url) VALUES ('FRONTIER', %s)",(inputUrl,))
+        #todo dokončaj vnos
+        databasePutConn("INSERT INTO crawldb.image (filename, content_type, data) VALUES")
         print(inputUrl)
     except:
         print("URL ze v DB") # hendlanje podvojitev
         # autoinceremnt id problem!! -> treba ugotovit kako dat nazaj
-"""
+
 
 
 def getJsUrls(content):
@@ -236,6 +237,10 @@ while (urlId):  # GLAVNA ZANKA
 
         # prenesi stran
         content, httpCode, contentType = fetchPageContent(domain, nextUrl, driver)
+
+        #dobi linke js
+        #getJsUrls(content)
+
         # ugotovi kakšen tip je ta content!
 
         databasePutConn("UPDATE crawldb.page SET html_content=%s, http_status_code=%s WHERE url=%s",
@@ -255,13 +260,14 @@ while (urlId):  # GLAVNA ZANKA
                     saveUrlToDB(parsed_url)  # save URLs to DB
 
         # iskanje slik
-        """
+
         for element in driver.find_elements_by_tag_name("img"):
             src = element.get_attribute('src')
             if src:
                 parsed_url_img = urlCanonization(src)
                 if 'gov.si' in urlparse(parsed_url_img).netloc:
-        """
+                    print("--------" + parsed_url_img)
+                    #todo pridobi vse potrebne podatke o sliki za vpis v bazo
 
     # spremeni iz PROCESSING v HTML/BINARY/DUPLICATE
     databasePutConn("UPDATE crawldb.page SET page_type_code='HTML' WHERE id=%s AND urL=%s", (urlId[0], urlId[1]))
