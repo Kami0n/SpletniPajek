@@ -16,7 +16,7 @@ TIMEOUT = 5
 RENDERTIMEOUT = 5
 start_time = time.time()
 
-dictIpTime =  {}
+dictIpTime = dict()
 
 NOTHREADS = 2
 # WEB_DRIVER_LOCATION = "D:/Fakulteta/2 stopnja/2sem/IEPS/1seminar/chromedriver"
@@ -89,10 +89,10 @@ def checkRootSite(domain):
     return data
 
 
-def fetchPageContent(domain, webAddress, driver, dictIpTime):
+def fetchPageContent(domain, webAddress, driver):
     del driver.requests  # pobrisi requeste za nazaj, ker nas zanimajo samo trenutni!
     global start_time
-
+    global dictIpTime
     """
     razlikaCasa = (time.time() - start_time)
     if razlikaCasa < TIMEOUT:  # in če je isti IP !! -> drugače ni treba timeouta
@@ -204,13 +204,13 @@ while (urlId):  # GLAVNA ZANKA
     if not checkRootSite(domain):  # ali je root site (domain) ze v bazi
         print("NEZNAN site: " + domain + "  Fetching Robots")
 
-        robotContent, httpCode, contType = fetchPageContent(domain, nextUrl + '/robots.txt', driver, dictIpTime)
+        robotContent, httpCode, contType = fetchPageContent(domain, nextUrl + '/robots.txt', driver)
         robotContent = driver.find_elements_by_tag_name("body")[0].text  # pridobi samo text, brez html znack
 
         if "Not Found" not in robotContent:  # za razširit
             robots = Robots.parse(nextUrl + '/robots.txt', robotContent)
             for sitemap in robots.sitemaps:
-                sitemapContent, httpCode, contType = fetchPageContent(domain, sitemap, driver,dictIpTime)
+                sitemapContent, httpCode, contType = fetchPageContent(domain, sitemap, driver)
             databasePutConn("INSERT INTO crawldb.site (domain, robots_content, sitemap_content) VALUES (%s,%s,%s)",
                             (domain, robotContent, sitemapContent))
         else:
@@ -235,7 +235,7 @@ while (urlId):  # GLAVNA ZANKA
     if robots is None or robots.allowed(nextUrl, 'my-user-agent'):
 
         # prenesi stran
-        content, httpCode, contentType = fetchPageContent(domain, nextUrl, driver, dictIpTime)
+        content, httpCode, contentType = fetchPageContent(domain, nextUrl, driver)
         # ugotovi kakšen tip je ta content!
 
         databasePutConn("UPDATE crawldb.page SET html_content=%s, http_status_code=%s WHERE url=%s",
