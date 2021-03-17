@@ -12,7 +12,7 @@ PROCESSES = multiprocessing.cpu_count() - 1
 def getNextUrl(lock):
     with lock:
         time.sleep(0.2)
-        page = urlopen('http://localhost/count/')
+        page = urlopen('http://83.212.82.40/counting/')
         return page.read()
 
 
