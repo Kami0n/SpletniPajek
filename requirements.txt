@@ -3,3 +3,4 @@ reppy
 psycopg2
 urlcanon
 url
+python-dotenv

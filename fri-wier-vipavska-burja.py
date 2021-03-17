@@ -1,3 +1,12 @@
+
+# import local env settings
+import os
+from os.path import join, dirname
+from dotenv import load_dotenv
+dotenv_path = join(dirname(__file__), '.env')
+load_dotenv(dotenv_path)
+WEB_DRIVER_LOCATION = os.environ.get("WEB_DRIVER_LOCATION")
+
 import time
 import threading
 
@@ -19,8 +28,6 @@ start_time = time.time()
 dictIpTime = dict()
 
 NOTHREADS = 2
-# WEB_DRIVER_LOCATION = "D:/Fakulteta/2 stopnja/2sem/IEPS/1seminar/chromedriver"
-WEB_DRIVER_LOCATION = "C:/Users/Toncaw/downloads/chromedriver"
 SEEDARRAY = ['https://gov.si', 'https://evem.gov.si', 'https://e-uprava.gov.si', 'https://e-prostor.gov.si']
 
 chrome_options = Options()
@@ -220,7 +227,7 @@ while (urlId):  # GLAVNA ZANKA
         # povezi page z site
         databasePutConn("UPDATE crawldb.page SET site_id=(SELECT id FROM crawldb.site WHERE domain=%s) WHERE url=%s",
                         (domain, nextUrl))
-    else:
+    else: # ce je site ze znan
         print("ZNAN site: " + domain)
         # load robots from DB
         robotContent = databaseGetConn("SELECT robots_content FROM crawldb.site WHERE domain=%s", (domain,))[0][0]
@@ -234,7 +241,7 @@ while (urlId):  # GLAVNA ZANKA
 
     # ali je dovoljeno da gremo na ta link
     if robots is None or robots.allowed(nextUrl, 'my-user-agent'):
-
+        
         # prenesi stran
         content, httpCode, contentType = fetchPageContent(domain, nextUrl, driver)
 
@@ -258,9 +265,8 @@ while (urlId):  # GLAVNA ZANKA
                 if 'gov.si' in urlparse(
                         parsed_url).netloc:  # TODO uporabi regular expression za preverjanje ce je stran v gov.si
                     saveUrlToDB(parsed_url)  # save URLs to DB
-
+        
         # iskanje slik
-
         for element in driver.find_elements_by_tag_name("img"):
             src = element.get_attribute('src')
             if src:
@@ -268,7 +274,7 @@ while (urlId):  # GLAVNA ZANKA
                 if 'gov.si' in urlparse(parsed_url_img).netloc:
                     print("--------" + parsed_url_img)
                     #todo pridobi vse potrebne podatke o sliki za vpis v bazo
-
+    
     # spremeni iz PROCESSING v HTML/BINARY/DUPLICATE
     databasePutConn("UPDATE crawldb.page SET page_type_code='HTML' WHERE id=%s AND urL=%s", (urlId[0], urlId[1]))
     urlId = getNextUrl()  # vzames naslednji url iz baze
