@@ -6,28 +6,31 @@ from dotenv import load_dotenv
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 WEB_DRIVER_LOCATION = os.environ.get("WEB_DRIVER_LOCATION")
+HOST = os.environ.get("HOST")
+DBUSER = os.environ.get("DBUSER")
+DBPASSWD = os.environ.get("DBPASSWD")
 
+import io
+import pathlib
 import time
+from datetime import datetime
 import threading
-
 import psycopg2
-
 from seleniumwire import webdriver
 from selenium.webdriver.chrome.options import Options
-
 import url
 from urllib.parse import urlparse
+from urllib.request import urlopen
 from reppy import Robots
-
 import socket
+from PIL import Image
+import hashlib
 
 TIMEOUT = 5
 RENDERTIMEOUT = 5
 start_time = time.time()
-
 dictIpTime = dict()
 
-NOTHREADS = 2
 SEEDARRAY = ['https://gov.si', 'https://evem.gov.si', 'https://e-uprava.gov.si', 'https://e-prostor.gov.si']
 
 chrome_options = Options()
@@ -35,20 +38,21 @@ chrome_options = Options()
 chrome_options.add_argument("--headless")
 # Adding a specific user agent
 chrome_options.add_argument("user-agent=fri-wier-vipavska-burja")
+# disable console.log
+chrome_options.add_argument("--log-level=3")
 driver = webdriver.Chrome(WEB_DRIVER_LOCATION, options=chrome_options)
 
 
 def databasePutConn(stringToExecute, params=()):
-    conn = psycopg2.connect(host="localhost", user="user", password="friWIERvipavskaBurja")
+    conn = psycopg2.connect(host="localhost", user=DBUSER, password=DBPASSWD)
     conn.autocommit = True
     cur = conn.cursor()
     cur.execute(stringToExecute, params)
     cur.close()
     conn.close()
 
-
 def databaseGetConn(stringToExecute, params=()):
-    conn = psycopg2.connect(host="localhost", user="user", password="friWIERvipavskaBurja")
+    conn = psycopg2.connect(host=HOST, user=DBUSER, password=DBPASSWD)
     conn.autocommit = True
     cur = conn.cursor()
     cur.execute(stringToExecute, params)
@@ -100,17 +104,21 @@ def fetchPageContent(domain, webAddress, driver):
     del driver.requests  # pobrisi requeste za nazaj, ker nas zanimajo samo trenutni!
     global start_time
     global dictIpTime
-    """
-    razlikaCasa = (time.time() - start_time)
-    if razlikaCasa < TIMEOUT:  # in če je isti IP !! -> drugače ni treba timeouta
-        print("TIMEOUT")
-        time.sleep(TIMEOUT - razlikaCasa)
-
-    print(f"Retrieving content for web page URL '{webAddress}'")
-    """
-    naslovIP = socket.gethostbyname(domain)
+    
+    #razlikaCasa = (time.time() - start_time)
+    #if razlikaCasa < TIMEOUT:  # in če je isti IP !! -> drugače ni treba timeouta
+    #    print("TIMEOUT")
+    #    time.sleep(TIMEOUT - razlikaCasa)
+    #print(f"Retrieving content for web page URL '{webAddress}'")
+    
+    try:
+        naslovIP = socket.gethostbyname(domain)
+    except:
+        print("ERR_NAME_NOT_RESOLVED")
+        return None, 417, None
+    
     timeStampIzDict = dictIpTime.get(naslovIP)
-
+    
     if  (timeStampIzDict is None):
         timeStampIzDict = time.time()
 
@@ -120,35 +128,41 @@ def fetchPageContent(domain, webAddress, driver):
     driver.get(webAddress)
     dictIpTime = {naslovIP: time.time()}
 
-    # for request in driver.requests:
-    # if request.response:
-    # print( request.url, request.response.status_code, request.response.headers['Content-Type'] )
-    # if driver.requests[0].response:
-    # print( driver.requests[0].url, driver.requests[0].response.status_code, driver.requests[0].response.headers['Content-Type'] )
+    #for request in driver.requests:
+    #    if request.response:
+    #         print( request.url, request.response.status_code, request.response.headers['Content-Type'] )
+    #    if driver.requests[0].response:
+    #         print( driver.requests[0].url, driver.requests[0].response.status_code, driver.requests[0].response.headers['Content-Type'] )
 
-    """
-    i = 0
-    while True:
-        print(driver.requests[i].url, driver.requests[i].response.status_code,
-              driver.requests[i].response.headers['Content-Type'])
-        if driver.requests[i].response.status_code == 200 or driver.requests[i].response.status_code >= 400:
-            break
-        i += 1
-    """
-    try:
-        print(driver.requests.url, driver.requests.response.status_code,
-              driver.requests.response.headers['Content-Type'])
-    except Exception as e:
-        print(e)
-
-    # Timeout needed for Web page to render (read more about it)
+    #try:
+    #    print(driver.requests.url, driver.requests.response.status_code,
+    #          driver.requests.response.headers['Content-Type'])
+    #except Exception as e:
+    #    print(e)
+    
+    # Timeout needed for Web page to render
     time.sleep(RENDERTIMEOUT)
 
     content = driver.page_source
     # print(f"Retrieved Web content (truncated to first 900 chars): \n\n'\n{html[:900]}\n'\n")
 
     start_time = time.time()
-    return content, driver.requests[0].response.status_code, driver.requests[0].response.headers['Content-Type']
+    
+    if (driver, 'page_source') and content is not None: # smo dobili nazaj content?
+        
+        if hasattr(driver.requests, 'response'): # did we get response back??
+            i = 0
+            while True:
+                print(driver.requests[i].url, driver.requests[i].response.status_code, driver.requests[i].response.headers['Content-Type'])
+                if driver.requests[i].response.status_code == 200 or driver.requests[i].response.status_code >= 400:
+                    break
+            i += 1
+            return content, driver.requests[i].response.status_code, driver.requests[i].response.headers['Content-Type']
+            
+        return content, None, None
+    
+    print("\nEmpty response!\n")
+    return None, 417, None
 
 
 def urlCanonization(inputUrl):
@@ -160,22 +174,10 @@ def urlCanonization(inputUrl):
 def saveUrlToDB(inputUrl):
     try:
         databasePutConn("INSERT INTO crawldb.page (page_type_code, url) VALUES ('FRONTIER', %s)", (inputUrl,))
-        print(inputUrl)
+        #print(inputUrl)
     except:
-        print("URL ze v DB")  # hendlanje podvojitev
-        # autoinceremnt id problem!! -> treba ugotovit kako dat nazaj
-
-
-
-def saveImgToDB(inputUrl):
-    try:
-        #todo dokončaj vnos
-        databasePutConn("INSERT INTO crawldb.image (filename, content_type, data) VALUES")
-        print(inputUrl)
-    except:
-        print("URL ze v DB") # hendlanje podvojitev
-        # autoinceremnt id problem!! -> treba ugotovit kako dat nazaj
-
+        None
+        #print("URL ze v DB")  # hendlanje podvojitev
 
 
 def getJsUrls(content):
@@ -197,6 +199,7 @@ def getJsUrls(content):
 
 
 initCrawler(SEEDARRAY)
+#initFrontier(SEEDARRAY) # pobrise bazo
 
 urlId = getNextUrl()  # vzames prvi url iz baze
 while (urlId):  # GLAVNA ZANKA
@@ -204,31 +207,37 @@ while (urlId):  # GLAVNA ZANKA
     # TODO DODAJ ACCESSED TIME -> accessed_time=%s time.time(), -
     databasePutConn("UPDATE crawldb.page SET page_type_code='PROCESSING' WHERE id=%s AND urL=%s", (urlId[0], urlId[1]))
     nextUrl = urlId[1]
+    print("\nNaslednji URL:")
     print(nextUrl)
 
     robots = None
     domain = urlparse(nextUrl).netloc
 
     if not checkRootSite(domain):  # ali je root site (domain) ze v bazi
-        print("NEZNAN site: " + domain + "  Fetching Robots")
-
+        print("\nNEZNAN site: " + domain)
+        print("Fetching robots.txt")
+        
         robotContent, httpCode, contType = fetchPageContent(domain, nextUrl + '/robots.txt', driver)
         robotContent = driver.find_elements_by_tag_name("body")[0].text  # pridobi samo text, brez html znack
-
-        if "Not Found" not in robotContent:  # za razširit
+        
+        if httpCode == 200 and "Not Found" not in robotContent:
             robots = Robots.parse(nextUrl + '/robots.txt', robotContent)
             for sitemap in robots.sitemaps:
+                print("Fetching sitemap")
                 sitemapContent, httpCode, contType = fetchPageContent(domain, sitemap, driver)
-            databasePutConn("INSERT INTO crawldb.site (domain, robots_content, sitemap_content) VALUES (%s,%s,%s)",
-                            (domain, robotContent, sitemapContent))
-        else:
+            
+            if robots.sitemaps: # robots & sitemap present
+                databasePutConn("INSERT INTO crawldb.site (domain, robots_content, sitemap_content) VALUES (%s,%s,%s)", (domain, robotContent, sitemapContent))
+            else: # only robots.txt present
+                databasePutConn("INSERT INTO crawldb.site (domain, robots_content) VALUES (%s,%s)", (domain, robotContent))
+        else: # no robots
             databasePutConn("INSERT INTO crawldb.site (domain) VALUES (%s)", (domain,))
 
         # povezi page z site
         databasePutConn("UPDATE crawldb.page SET site_id=(SELECT id FROM crawldb.site WHERE domain=%s) WHERE url=%s",
                         (domain, nextUrl))
     else: # ce je site ze znan
-        print("ZNAN site: " + domain)
+        print("\nZNAN site: " + domain)
         # load robots from DB
         robotContent = databaseGetConn("SELECT robots_content FROM crawldb.site WHERE domain=%s", (domain,))[0][0]
         if robotContent is not None:
@@ -241,42 +250,68 @@ while (urlId):  # GLAVNA ZANKA
 
     # ali je dovoljeno da gremo na ta link
     if robots is None or robots.allowed(nextUrl, 'my-user-agent'):
-        
         # prenesi stran
         content, httpCode, contentType = fetchPageContent(domain, nextUrl, driver)
-
-        #dobi linke js
-        #getJsUrls(content)
-
         # ugotovi kakšen tip je ta content!
-
-        databasePutConn("UPDATE crawldb.page SET html_content=%s, http_status_code=%s WHERE url=%s",
-                        (content, httpCode, nextUrl))
-
-        # povezave ki so v html kodi -> href & TODO onclick (location.href)
-        # pravilno upoštevaj relativne URLje! -> načeloma piše absoluti url v <head> baseurl ali og url
-        # TODO detektiranje slik <img src="">
-
-        for element in driver.find_elements_by_tag_name("a"):
-            href = element.get_attribute('href')
-            if href:  # is href not None?
-                parsed_url = urlCanonization(href)  # URL CANONIZATION
-                # preveri če je link na gov.si, drugace se ga ne uposteva
-                if 'gov.si' in urlparse(
-                        parsed_url).netloc:  # TODO uporabi regular expression za preverjanje ce je stran v gov.si
-                    saveUrlToDB(parsed_url)  # save URLs to DB
         
-        # iskanje slik
-        for element in driver.find_elements_by_tag_name("img"):
-            src = element.get_attribute('src')
-            if src:
-                parsed_url_img = urlCanonization(src)
-                if 'gov.si' in urlparse(parsed_url_img).netloc:
-                    print("--------" + parsed_url_img)
-                    #todo pridobi vse potrebne podatke o sliki za vpis v bazo
-    
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        # hash contenta
+        hashContent = hashlib.sha256(content.encode('utf-8')).hexdigest()
+        #print(hashContent)
+        
+        # ugotovi duplicate
+        numberHash = databaseGetConn("SELECT COUNT(*) FROM crawldb.page WHERE hash=%s", (hashContent,))[0][0]
+        if numberHash != 0 : # ce je podvojena stran, shrani hash in continue
+            print("PODVOJENA STRAN")
+            
+        else:
+            databasePutConn("UPDATE crawldb.page SET html_content=%s, http_status_code=%s WHERE url=%s", (content, httpCode, nextUrl))
+            
+            # get all href links
+            for element in driver.find_elements_by_tag_name("a"):
+                href = element.get_attribute('href')
+                if href:  # is href not None?
+                    parsed_url = urlCanonization(href)  # URL CANONIZATION
+                    # preveri če je link na gov.si, drugace se ga ne uposteva
+                    if 'gov.si' in urlparse(parsed_url).netloc:
+                        # TODO uporabi regular expression za preverjanje ce je stran v gov.si
+                        saveUrlToDB(parsed_url)  # save URLs to DB
+            
+            # get all JS links
+            #getJsUrls(content)
+            
+            # iskanje slik
+            for element in driver.find_elements_by_tag_name("img"):
+                src = element.get_attribute('src')
+                if src:
+                    if "data:image" in src: # is image encoded with data:
+                        #print("SLIKA encoded!")
+                        if element.get_attribute('alt'):
+                            databasePutConn("INSERT INTO crawldb.image (page_id, filename, content_type, data, accessed_time) VALUES (%s,%s,%s,%s,%s)", (urlId[0], 'Alt: '+element.get_attribute('alt'), 'data:image', src, timestamp))
+                        else:
+                            databasePutConn("INSERT INTO crawldb.image (page_id, filename, content_type, data, accessed_time) VALUES (%s,%s,%s,%s,%s)", (urlId[0], 'No name', 'data:image', src, timestamp))
+                            
+                    else: # is image just url
+                        parsed_url_img = urlCanonization(src)
+                        imageName = os.path.basename(urlparse(parsed_url_img).path)
+                        #print("SLIKA: " + imageName)
+                        # detect image format
+                        if pathlib.Path(imageName).suffix in '.svg':
+                            # data?
+                            databasePutConn("INSERT INTO crawldb.image (page_id, filename, content_type, accessed_time) VALUES (%s,%s,%s,%s)", (urlId[0], imageName, "svg", timestamp))
+                        else:
+                            pil_im = Image.open(urlopen(parsed_url_img))
+                            b = io.BytesIO()
+                            pil_im.save(b, pil_im.format)
+                            imageBytes = b.getvalue()
+                            
+                            databasePutConn("INSERT INTO crawldb.image (page_id, filename, content_type, data, accessed_time) VALUES (%s,%s,%s,%s,%s)", (urlId[0], imageName, pil_im.format, imageBytes, timestamp))
+                    
+                    
     # spremeni iz PROCESSING v HTML/BINARY/DUPLICATE
-    databasePutConn("UPDATE crawldb.page SET page_type_code='HTML' WHERE id=%s AND urL=%s", (urlId[0], urlId[1]))
+    databasePutConn("UPDATE crawldb.page SET page_type_code='HTML', accessed_time=%s, hash=%s WHERE id=%s AND urL=%s", (timestamp, hashContent, urlId[0], urlId[1]))
+    
     urlId = getNextUrl()  # vzames naslednji url iz baze
 
 # lock = threading.Lock()
@@ -285,13 +320,10 @@ driver.close()
 print("KONCANO")
 
 # TODO
-# preverajnje duplikatov. Sepravi če: gov.si/a -> =vsebina= <- evem.si/b (drugi linki vsebina ista) najlažje rešiš z hashom starni
-# iskanje onclick povezav, a href ze dela
+# preverajnje duplikatov. Sepravi če: gov.si/a -> =vsebina= <- evem.si/b (drugi linki vsebina ista) najlažje rešiš z hashom strani
+# iskanje onclick povezav
 # hendlanje redirectov 302 !!
-# pravilno upoštevaj relativne URLje! -> načeloma piše v <head> baseurl ali og url
-# detektiranje slik <img src="">
-
-# problem ko ostane stran zaklenjena, ce pajka izklopimo
+# pravilno upoštevaj relativne URLje! -> načeloma piše absolutni url v <head> baseurl ali og url
 
 
 # page_type_code
