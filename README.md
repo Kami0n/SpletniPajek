@@ -1,20 +1,17 @@
-# ieps-vipavska-burja
-Repozitorij za projekt IEPS.
+# Repozitorij za projekt IEPS
+## ieps-vipavska-burja (ime pajka)
 
-ime pajka -> fri-wier-vipavska-burja
+###### Matjaž Rupnik & Blaž Ličen
+###### Ekipa Vipavska Burja
 
-multiple workers -> več niti
+Na začetku uporabnik z vnosom definira število niti.
 
-na začetku se definira število niti
-
-več niti ne smejo delati z isto stranjo!!
-
-iskanje v širino -> po celotnem nivoju naenkrat!
+# Smernice za programiranje:
+Več niti ne sme delati z isto stranjo!
 
 15s na posamezen strežnik! -> na nekem IP, ne na domeni
 
 upoštevaj robots.txt
-
 sitemap in disalow
 
 pajek prenese samo HTML vsebino! -> lista tudi ostali content
@@ -37,6 +34,7 @@ ne rabimo oddat tabel image in page data
 
 sheme lahko razširjamo, osbtoječe sheme pa ne spreminjamo iz brišemo
 
+--------------------------------------------------------------
 
 upošteval bo commite, ki so do roka
 
@@ -49,4 +47,3 @@ lahko programiramo v kirem jeziku in okolju želimo, baza pa naj bo taka kot je 
 lahko gledamo končnice, če pa končnice ni lahko pogledamo v head kakšen je data type
 
 vaje v naprej bojo konzultacijske razen primera, če kdo na slack napiše da bi rad kakšno razlago
-
