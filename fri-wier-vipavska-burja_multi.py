@@ -130,23 +130,26 @@ def fetchPageContent(domain, webAddress, driver):
         
         if hasattr(driver.requests[0], 'response'): # did we get response back??
             steviloResponse = -1
-            responseHtml = 0
+            responseContent = 0
+            responseStatusCode = 0
+            
             for request in driver.requests:
                 if request.response:
                     #print( steviloResponse, request.url, request.response.status_code, request.response.headers['Content-Type'] )
                     steviloResponse += 1
                     if request.response.headers['Content-Type'] is not None and 'text/html' in request.response.headers['Content-Type']:
-                        responseHtml = steviloResponse
-            return content, driver.requests[0].response.status_code, driver.requests[responseHtml].response.headers['Content-Type']
+                        responseContent = steviloResponse
+            
+            if driver.requests[responseStatusCode].response is not None:
+                return content, driver.requests[responseStatusCode].response.status_code, driver.requests[responseContent].response.headers['Content-Type']
         
         #for request in driver.requests:
         #    if request.response:
         #         print( request.url, request.response.status_code, request.response.headers['Content-Type'] )
         
-        print("\nFetch: No status code code!\n")
-        return content, 200, None
+        #print("\nFetch: No status code code!\n")
+        #return content, 200, None
         
-    print("\nFetch: Empty response!\n")
     return None, 417, None
 
 def urlCanonization(inputUrl):
@@ -239,7 +242,8 @@ def process(nextUrl, lock):
     
     while urlId is not None:  # MAIN LOOP
         nextUrl = urlId[1]
-        print("\nNaslednji URL:",nextUrl," PID: ",str(os.getpid()))
+        
+        print("PID:",'{0:06}'.format(os.getpid())," Next URL:",nextUrl)
         
         robots = None
         domain = urlparse(nextUrl).netloc
@@ -295,7 +299,7 @@ def process(nextUrl, lock):
                         getImgUrls(content, urlId[0], timestamp) # get all img links
                         databasePutConn("UPDATE crawldb.page SET html_content=%s, http_status_code=%s, page_type_code='HTML', accessed_time=%s, hash=%s WHERE id=%s AND urL=%s", (content, httpCode, timestamp, hashContent, urlId[0], urlId[1]))
                     else:
-                        databasePutConn("UPDATE crawldb.page SET http_status_code=%s, page_type_code='BINARY', accessed_time=%s, WHERE id=%s AND urL=%s", (httpCode, timestamp, urlId[0], urlId[1]))
+                        databasePutConn("UPDATE crawldb.page SET http_status_code=%s, page_type_code='BINARY', accessed_time=%s WHERE id=%s AND urL=%s", (httpCode, timestamp, urlId[0], urlId[1]))
                     
         urlId = getNextUrl(lock)  # next url from frontier (DB)
     
@@ -309,8 +313,8 @@ def run():
     
     print(f"Running with {PROCESSES} processes!")
     
-    initFrontier(SEEDARRAY) # clear DB
-    #initCrawler(SEEDARRAY)
+    #initFrontier(SEEDARRAY) # clear DB !!
+    initCrawler(SEEDARRAY)
     
     start = time.time()
     
