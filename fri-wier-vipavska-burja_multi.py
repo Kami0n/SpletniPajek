@@ -180,7 +180,9 @@ def getJsUrls(content):
         onclick = element.get_attribute('onclick')
         result = re.search(r'(\"|\')(.*)(\"|\')', onclick)
         #urls.append(result.group(2))
-        saveUrlToDB(result.group(2))  # save URLs to DB
+        if result:
+            if result.group(2) is not None:
+                saveUrlToDB(result.group(2))  # save URLs to DB
 
 def getImgUrls(content, pageId, timestamp):
     for element in driver.find_elements_by_tag_name("img"):
