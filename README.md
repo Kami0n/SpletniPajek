@@ -3,6 +3,7 @@
 ### Matjaž Rupnik & Blaž Ličen
 ### Ekipa Vipavska Burja
 
+Obvezna uporaba `python` verzije `3.7` -> ker se uporablja modul `urlcanon`, ki trenutno ne deluje na novejši verziji pythona.
 Na začetku uporabnik z vnosom definira število niti.
 
 --------------------------------------------------------------
