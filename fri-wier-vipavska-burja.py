@@ -48,7 +48,7 @@ chrome_options.add_argument("--log-level=3")
 driver = webdriver.Chrome(WEB_DRIVER_LOCATION, options=chrome_options)
 
 def databasePutConn(stringToExecute, params=()):
-    conn = psycopg2.connect(host="localhost", user=DBUSER, password=DBPASSWD)
+    conn = psycopg2.connect(host=HOST, user=DBUSER, password=DBPASSWD)
     conn.autocommit = True
     cur = conn.cursor()
     cur.execute(stringToExecute, params)
@@ -212,8 +212,8 @@ def getImgUrls(content):
                     databasePutConn("INSERT INTO crawldb.image (page_id, filename, content_type, data, accessed_time) VALUES (%s,%s,%s,%s,%s)", (urlId[0], imageName, pil_im.format, imageBytes, timestamp))
 
 if __name__ == "__main__":
-    initFrontier(SEEDARRAY) # clear DB
-    #initCrawler(SEEDARRAY)
+    #initFrontier(SEEDARRAY) # clear DB
+    initCrawler(SEEDARRAY)
     
     urlId = getNextUrl()  # take first url from frontier (DB)
     while (urlId):  # MAIN LOOP
