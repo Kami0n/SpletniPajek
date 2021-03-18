@@ -1,12 +1,12 @@
 # Repozitorij za projekt IEPS
 ## ieps-vipavska-burja (ime pajka)
-
-###### Matjaž Rupnik & Blaž Ličen
-###### Ekipa Vipavska Burja
+### Matjaž Rupnik & Blaž Ličen
+### Ekipa Vipavska Burja
 
 Na začetku uporabnik z vnosom definira število niti.
 
-# Smernice za programiranje:
+--------------------------------------------------------------
+## Smernice za programiranje:
 Več niti ne sme delati z isto stranjo!
 
 15s na posamezen strežnik! -> na nekem IP, ne na domeni
