@@ -1,6 +1,8 @@
 
 # import local env settings
 import os
+os.system('cls')
+
 from os.path import join, dirname
 from dotenv import load_dotenv
 dotenv_path = join(dirname(__file__), '.env')
@@ -161,37 +163,33 @@ def fetchPageContent(domain, webAddress, driver):
 
 def urlCanonization(inputUrl):
     outputUrl = url.parse(inputUrl).strip().defrag().canonical().abspath().utf8
-
     return outputUrl.decode("utf-8")
 
 
 def saveUrlToDB(inputUrl):
-    try:
-        databasePutConn("INSERT INTO crawldb.page (page_type_code, url) VALUES ('FRONTIER', %s)", (inputUrl,))
-        #print(inputUrl)
-    except:
-        #print("URL ze v DB")  # hendlanje podvojitev
-        pass
+    # preveri če je link na *.gov.si, drugace se ga ne uposteva
+    if re.match(r'.*([\.]gov.si[\/]).*', inputUrl):
+        parsed_url = urlCanonization(inputUrl)  # URL CANONIZATION
+        try:
+            databasePutConn("INSERT INTO crawldb.page (page_type_code, url) VALUES ('FRONTIER', %s)", (parsed_url,))
+        except:
+            #print("URL ze v DB")  # hendlanje podvojitev
+            pass
 
 def getHrefUrls(content):
-    urls = []
+    #urls = []
     for element in driver.find_elements_by_tag_name("a"):
         href = element.get_attribute('href')
         if href:  # is href not None?
-            parsed_url = urlCanonization(href)  # URL CANONIZATION
-            # preveri če je link na gov.si, drugace se ga ne uposteva
-            if 'gov.si' in urlparse(parsed_url).netloc:
-                urls.append(parsed_url)
-                # TODO uporabi regular expression za preverjanje ce je stran v gov.si
-                saveUrlToDB(parsed_url)  # save URLs to DB
+            #urls.append(href)
+            saveUrlToDB(href)  # save URLs to DB
 
 def getJsUrls(content):
-    urls = []
+    #urls = []
     for element in driver.find_elements_by_xpath("//*[@onclick]"): # find all elements that have attributre onclick
         onclick = element.get_attribute('onclick')
-        result = re.search('(\"|\')(.*)(\"|\')', onclick)
-        #print(result.group(2))
-        urls.append(result.group(2))
+        result = re.search(r'(\"|\')(.*)(\"|\')', onclick)
+        #urls.append(result.group(2))
         saveUrlToDB(result.group(2))  # save URLs to DB
 
 def getImgUrls(content):
@@ -222,8 +220,8 @@ def getImgUrls(content):
                     databasePutConn("INSERT INTO crawldb.image (page_id, filename, content_type, data, accessed_time) VALUES (%s,%s,%s,%s,%s)", (urlId[0], imageName, pil_im.format, imageBytes, timestamp))
 
 if __name__ == "__main__":
-    #initFrontier(SEEDARRAY) # pobrise bazo
-    initCrawler(SEEDARRAY)
+    initFrontier(SEEDARRAY) # pobrise bazo
+    #initCrawler(SEEDARRAY)
     
     urlId = getNextUrl()  # vzames prvi url iz baze
     while (urlId):  # GLAVNA ZANKA
