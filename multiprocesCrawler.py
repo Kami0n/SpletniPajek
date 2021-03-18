@@ -1,5 +1,6 @@
 # simple_task_queue.py
-
+import os
+import sys
 from multiprocessing import Process, Value, Lock
 import multiprocessing
 import time
@@ -11,7 +12,7 @@ PROCESSES = multiprocessing.cpu_count() - 1
 # funkcija ki daje URLje
 def getNextUrl(lock):
     with lock:
-        time.sleep(0.2)
+        #time.sleep(0.2)
         page = urlopen('http://83.212.82.40/counting/')
         return page.read()
 
@@ -20,7 +21,9 @@ def getNextUrl(lock):
 def process(nextUrl, lock):
     while nextUrl!=-1:
         nextUrl = int(getNextUrl(lock).decode("utf-8"))
-        print(nextUrl)
+        
+        print(str(nextUrl) + " PID: "+ str(os.getpid()))
+        
         
     return True
 
