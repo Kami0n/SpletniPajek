@@ -5,6 +5,7 @@ os.system('cls')
 
 from os.path import join, dirname
 from dotenv import load_dotenv
+# loading .env file
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 WEB_DRIVER_LOCATION = os.environ.get("WEB_DRIVER_LOCATION")
@@ -34,7 +35,7 @@ RENDERTIMEOUT = 5
 start_time = time.time()
 dictIpTime = dict()
 
-# 'http://83.212.82.40/testJsHref/' -> testiranje onclick href
+# 'http://83.212.82.40/testJsHref/' -> for testing onclick href
 SEEDARRAY = ['https://gov.si', 'https://evem.gov.si', 'https://e-uprava.gov.si', 'https://e-prostor.gov.si']
 
 chrome_options = Options()
@@ -45,7 +46,6 @@ chrome_options.add_argument("user-agent=fri-wier-vipavska-burja")
 # disable console.log
 chrome_options.add_argument("--log-level=3")
 driver = webdriver.Chrome(WEB_DRIVER_LOCATION, options=chrome_options)
-
 
 def databasePutConn(stringToExecute, params=()):
     conn = psycopg2.connect(host="localhost", user=DBUSER, password=DBPASSWD)
@@ -65,7 +65,6 @@ def databaseGetConn(stringToExecute, params=()):
     conn.close()
     return answer
 
-
 def initFrontier(seed):
     print("Inicializiram Frontier")
 
@@ -78,10 +77,8 @@ def initFrontier(seed):
 
     print("Inicializacija Frontierja koncana")
 
-
 def initFrontierProcessing():
     databasePutConn("UPDATE crawldb.page SET page_type_code='FRONTIER' WHERE page_type_code='PROCESSING'")
-
 
 def initCrawler(seedArray):
     numberFronteir = databaseGetConn("SELECT COUNT(*) FROM crawldb.page WHERE page_type_code='FRONTIER'")[0][0]
@@ -90,7 +87,6 @@ def initCrawler(seedArray):
     else:
         initFrontierProcessing()  # restart pajka
 
-
 def getNextUrl():
     # pridobi naslednji URL
     url = databaseGetConn("SELECT id,url FROM crawldb.page WHERE page_type_code='FRONTIER' ORDER BY id LIMIT 1 ")
@@ -98,11 +94,9 @@ def getNextUrl():
         return None
     return url[0]
 
-
 def checkRootSite(domain):
     data = databaseGetConn("SELECT * FROM crawldb.site WHERE domain='" + domain + "'")
     return data
-
 
 def fetchPageContent(domain, webAddress, driver):
     del driver.requests  # pobrisi requeste za nazaj, ker nas zanimajo samo trenutni!
@@ -160,11 +154,9 @@ def fetchPageContent(domain, webAddress, driver):
     print("\nFetch: Empty response!\n")
     return None, 417, None
 
-
 def urlCanonization(inputUrl):
     outputUrl = url.parse(inputUrl).strip().defrag().canonical().abspath().utf8
     return outputUrl.decode("utf-8")
-
 
 def saveUrlToDB(inputUrl):
     # preveri če je link na *.gov.si, drugace se ga ne uposteva
@@ -220,13 +212,12 @@ def getImgUrls(content):
                     databasePutConn("INSERT INTO crawldb.image (page_id, filename, content_type, data, accessed_time) VALUES (%s,%s,%s,%s,%s)", (urlId[0], imageName, pil_im.format, imageBytes, timestamp))
 
 if __name__ == "__main__":
-    initFrontier(SEEDARRAY) # pobrise bazo
+    initFrontier(SEEDARRAY) # clear DB
     #initCrawler(SEEDARRAY)
     
-    urlId = getNextUrl()  # vzames prvi url iz baze
-    while (urlId):  # GLAVNA ZANKA
-        # zakleni ta pridobljen URL
-        # TODO DODAJ ACCESSED TIME -> accessed_time=%s time.time(), -
+    urlId = getNextUrl()  # take first url from frontier (DB)
+    while (urlId):  # MAIN LOOP
+        # lock this url in frontier
         databasePutConn("UPDATE crawldb.page SET page_type_code='PROCESSING' WHERE id=%s AND urL=%s", (urlId[0], urlId[1]))
         nextUrl = urlId[1]
         print("\nNaslednji URL:")
@@ -235,16 +226,13 @@ if __name__ == "__main__":
         robots = None
         domain = urlparse(nextUrl).netloc
         
-        if not checkRootSite(domain):  # ali je root site (domain) ze v bazi
+        if not checkRootSite(domain):  # site unknown (domain not in sites)
             print("\nNEZNAN site: " + domain)
-            print("Fetching robots.txt")
-            
             robotContent, httpCode, contType = fetchPageContent(domain, nextUrl + '/robots.txt', driver)
-            robotContent = driver.find_elements_by_tag_name("body")[0].text  # pridobi samo text, brez html znack
+            robotContent = driver.find_elements_by_tag_name("body")[0].text  # robots.txt -> get only text, without html tags
             if httpCode == 200 and "Not Found" not in robotContent:
                 robots = Robots.parse(nextUrl + '/robots.txt', robotContent)
                 for sitemap in robots.sitemaps:
-                    print("Fetching sitemap")
                     sitemapContent, httpCode, contType = fetchPageContent(domain, sitemap, driver)
                 
                 if robots.sitemaps: # robots & sitemap present
@@ -254,24 +242,21 @@ if __name__ == "__main__":
             else: # no robots
                 databasePutConn("INSERT INTO crawldb.site (domain) VALUES (%s)", (domain,))
 
-            # povezi page z site
-            databasePutConn("UPDATE crawldb.page SET site_id=(SELECT id FROM crawldb.site WHERE domain=%s) WHERE url=%s",
-                            (domain, nextUrl))
-        else: # ce je site ze znan
+            # link page with site
+            databasePutConn("UPDATE crawldb.page SET site_id=(SELECT id FROM crawldb.site WHERE domain=%s) WHERE url=%s", (domain, nextUrl))
+        else: # site known
             print("\nZNAN site: " + domain)
+            # link page with site
+            databasePutConn("UPDATE crawldb.page SET site_id=(SELECT id FROM crawldb.site WHERE domain=%s) WHERE url=%s", (domain, nextUrl))
             # load robots from DB
             robotContent = databaseGetConn("SELECT robots_content FROM crawldb.site WHERE domain=%s", (domain,))[0][0]
             if robotContent is not None:
                 robots = Robots.parse(nextUrl + '/robots.txt', robotContent)
             else:
                 robots = None
-            # povezi page z site
-            databasePutConn("UPDATE crawldb.page SET site_id=(SELECT id FROM crawldb.site WHERE domain=%s) WHERE url=%s",
-                            (domain, nextUrl))
         
-        if robots is None or robots.allowed(nextUrl, 'my-user-agent'): # ali je dovoljeno da gremo na ta link
-            # prenesi stran
-            
+        if robots is None or robots.allowed(nextUrl, 'my-user-agent'): # does robots allow us to go on this link?
+            # download page content
             content, httpCode, contentType = fetchPageContent(domain, nextUrl, driver)
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             
@@ -286,39 +271,18 @@ if __name__ == "__main__":
                     print("PODVOJENA STRAN")
                     databasePutConn("UPDATE crawldb.page SET html_content=%s, http_status_code=%s, page_type_code='DUPLICATE', accessed_time=%s, hash=%s WHERE id=%s AND urL=%s", (content, httpCode, timestamp, hashContent, urlId[0], urlId[1]))
                 else:
-                    if 'text/html' in contentType:
-                        # TODO ugotovi kakšen tip je ta content!
-                        
-                        # get all href links
-                        getHrefUrls(content)
-                        
-                        # get all JS links
-                        getJsUrls(content)
-                        
-                        # get all img links
-                        getImgUrls(content)
-                        
+                    if 'text/html' in contentType: #ugotovi kakšen tip je ta content
+                        getHrefUrls(content) # get all href links
+                        getJsUrls(content) # get all JS links
+                        getImgUrls(content) # get all img links
                         databasePutConn("UPDATE crawldb.page SET html_content=%s, http_status_code=%s, page_type_code='HTML', accessed_time=%s, hash=%s WHERE id=%s AND urL=%s", (content, httpCode, timestamp, hashContent, urlId[0], urlId[1]))
                     else:
                         databasePutConn("UPDATE crawldb.page SET http_status_code=%s, page_type_code='BINARY', accessed_time=%s, WHERE id=%s AND urL=%s", (httpCode, timestamp, urlId[0], urlId[1]))
                     
-        urlId = getNextUrl()  # vzames naslednji url iz baze
-
-    # lock = threading.Lock()
-
+        urlId = getNextUrl()  # next url from frontier (DB)
     driver.close()
     print("KONCANO")
 
 # TODO
-# preverajnje duplikatov. Sepravi če: gov.si/a -> =vsebina= <- evem.si/b (drugi linki vsebina ista) najlažje rešiš z hashom strani
-# iskanje onclick povezav
-# hendlanje redirectov 302 !!
+# hendlanje redirectov 302 ?
 # pravilno upoštevaj relativne URLje! -> načeloma piše absolutni url v <head> baseurl ali og url
-
-
-# page_type_code
-# 1 HTML
-# 2 BINARY
-# 3 DUPLICATE
-# 4 FRONTIER
-# 5 PROCESSING
