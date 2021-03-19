@@ -127,7 +127,11 @@ def fetchPageContent(domain, webAddress, driver):
     elif (time.time() - timeStampIzDict) < 5:
         time.sleep(5 - (time.time() - timeStampIzDict))
     
-    driver.get(webAddress)
+    try:
+        driver.get(webAddress)
+    except:
+        return None, 417, None
+    
     dictIpTime = {naslovIP: time.time()}
     #print(dictIpTime)
     
@@ -160,14 +164,13 @@ def fetchPageContent(domain, webAddress, driver):
         
         #print("\nFetch: No status code code!\n")
         #return content, 200, None
-        
-    return None, 417, None
+        return None, 417, None
 
 def urlCanonization(inputUrl):
     outputUrl = url.parse(inputUrl).strip().defrag().canonical().abspath().utf8
     return outputUrl.decode("utf-8")
 
-def saveUrlToDB(inputUrl):
+def saveUrlToDB(inputUrl, currPageId):
     #koncniceSlik = ['.jpg', '.png', '.gif', '.webm', '.weba', '.webp', '.tiff']
     #if pathlib.Path(os.path.basename(urlparse(inputUrl).path)).suffix in koncniceSlik: # ce je slika
     #    pass
@@ -176,20 +179,21 @@ def saveUrlToDB(inputUrl):
     if re.match(r'.*([\.]gov.si[\/]).*', inputUrl):
         parsed_url = urlCanonization(inputUrl)  # URL CANONIZATION
         try:
-            databasePutConn("INSERT INTO crawldb.page (page_type_code, url) VALUES ('FRONTIER', %s)", (parsed_url,))
+            newPageId = databaseGetConn("INSERT INTO crawldb.page (page_type_code, url) VALUES ('FRONTIER', %s) RETURNING id", (parsed_url,))
+            databasePutConn("INSERT INTO crawldb.link (from_page,to_page) VALUES (%s, %s) ", (currPageId,newPageId[0][0]))
         except:
             #print("URL ze v DB")  # hendlanje podvojitev
             pass
 
-def getHrefUrls(content):
+def getHrefUrls(content, currPageId):
     #urls = []
     for element in driver.find_elements_by_tag_name("a"):
         href = element.get_attribute('href')
         if href:  # is href not None?
             #urls.append(href)
-            saveUrlToDB(href)  # save URLs to DB
+            saveUrlToDB(href, currPageId)  # save URLs to DB
 
-def getJsUrls(content):
+def getJsUrls(content, currPageId):
     #urls = []
     for element in driver.find_elements_by_xpath("//*[@onclick]"): # find all elements that have attributre onclick
         onclick = element.get_attribute('onclick')
@@ -197,7 +201,7 @@ def getJsUrls(content):
         #urls.append(result.group(2))
         if result:
             if result.group(2) is not None:
-                saveUrlToDB(result.group(2))  # save URLs to DB
+                saveUrlToDB(result.group(2), currPageId)  # save URLs to DB
 
 def getImgUrls(content, pageId, timestamp):
     for element in driver.find_elements_by_tag_name("img"):
@@ -328,8 +332,8 @@ def process(nextUrl, lock):
                 if numberHash == 0 or contentType2 == 'BINARY': # ce je podvojena stran, shrani hash in continue
                     #if contentType is not None and 'text/html' in contentType:
                     if contentType2 == 'HTML':
-                        getHrefUrls(content) # get all href links
-                        getJsUrls(content) # get all JS links
+                        getHrefUrls(content, urlId[0]) # get all href links
+                        getJsUrls(content, urlId[0]) # get all JS links
                         getImgUrls(content, urlId[0], timestamp) # get all img links
                         databasePutConn("UPDATE crawldb.page SET html_content=%s, http_status_code=%s, page_type_code='HTML', accessed_time=%s, hash=%s WHERE id=%s AND urL=%s", (content, httpCode, timestamp, hashContent, urlId[0], urlId[1]))
                     elif contentType2 == 'BINARY':
