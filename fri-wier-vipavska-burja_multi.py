@@ -45,9 +45,14 @@ chrome_options.add_argument("--headless")
 chrome_options.add_argument("user-agent=fri-wier-vipavska-burja")
 # disable console.log
 chrome_options.add_argument("--log-level=3")
+# ignore SSL certificate errors
+chrome_options.add_argument("--ignore-certificate-errors")
+
 driver = webdriver.Chrome(WEB_DRIVER_LOCATION, options=chrome_options)
 
 lock = Lock()
+
+mozneKoncnice = []
 
 def databasePutConn(stringToExecute, params=()):
     #with lock:
@@ -87,6 +92,12 @@ def initCrawler(seedArray):
         initFrontier(seedArray)  # prvi start pajka
     else:
         initFrontierProcessing()  # restart pajka
+
+def initDataTypes():
+    global mozneKoncnice
+    dbTypes = databaseGetConn('SELECT * FROM crawldb.data_type ')
+    for dbType in dbTypes:
+        mozneKoncnice.append('.'+dbType[0].lower())
 
 def checkRootSite(domain):
     data = databaseGetConn("SELECT * FROM crawldb.site WHERE domain='" + domain + "'")
@@ -157,6 +168,10 @@ def urlCanonization(inputUrl):
     return outputUrl.decode("utf-8")
 
 def saveUrlToDB(inputUrl):
+    #koncniceSlik = ['.jpg', '.png', '.gif', '.webm', '.weba', '.webp', '.tiff']
+    #if pathlib.Path(os.path.basename(urlparse(inputUrl).path)).suffix in koncniceSlik: # ce je slika
+    #    pass
+    #else:
     # preveri če je link na *.gov.si, drugace se ga ne uposteva
     if re.match(r'.*([\.]gov.si[\/]).*', inputUrl):
         parsed_url = urlCanonization(inputUrl)  # URL CANONIZATION
@@ -204,12 +219,14 @@ def getImgUrls(content, pageId, timestamp):
                     # data?
                     databasePutConn("INSERT INTO crawldb.image (page_id, filename, content_type, accessed_time) VALUES (%s,%s,%s,%s)", (pageId, imageName, "svg", timestamp))
                 else:
-                    pil_im = Image.open(urlopen(parsed_url_img))
-                    b = io.BytesIO()
-                    pil_im.save(b, pil_im.format)
-                    imageBytes = b.getvalue()
-                    
-                    databasePutConn("INSERT INTO crawldb.image (page_id, filename, content_type, data, accessed_time) VALUES (%s,%s,%s,%s,%s)", (pageId, imageName, pil_im.format, imageBytes, timestamp))
+                    try:
+                        pil_im = Image.open(urlopen(parsed_url_img)) 
+                        b = io.BytesIO()
+                        pil_im.save(b, pil_im.format)
+                        imageBytes = b.getvalue()
+                        databasePutConn("INSERT INTO crawldb.image (page_id, filename, content_type, data, accessed_time) VALUES (%s,%s,%s,%s,%s)", (pageId, imageName, pil_im.format, imageBytes, timestamp))
+                    except:
+                        pass # ulovi napako SSL
 
 def getNextUrl_old(lock):
     # pridobi naslednji URL
@@ -233,6 +250,19 @@ def getNextUrl(lock):
         # lock this url in frontier
         databasePutConn("UPDATE crawldb.page SET page_type_code='PROCESSING' WHERE id=%s AND urL=%s", (url[0][0], url[0][1]))
         return url[0]
+
+def contentTypeCheck(link, contentType):
+    global mozneKoncnice
+    if contentType is not None:
+        if 'text/html' in contentType: # ugotavljanje iz content type
+            return 'HTML'
+        else:
+            return 'BINARY'
+    elif link is not None: # link ugotavljanje iz linka
+        if pathlib.Path(os.path.basename(urlparse(link).path)).suffix in mozneKoncnice:
+            return 'BINARY'
+        return 'HTML'
+    return 'ERROR'
 
 # delovna funkcija -> ki predstavlja en proces
 def process(nextUrl, lock):
@@ -279,13 +309,13 @@ def process(nextUrl, lock):
             else:
                 robots = None
         
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         if robots is None or robots.allowed(nextUrl, 'my-user-agent'): # does robots allow us to go on this link?
             # download page content
             content, httpCode, contentType = fetchPageContent(domain, nextUrl, driver)
-            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            
-            if content is None: # prazen content -> error?
-                databasePutConn("UPDATE crawldb.page SET accessed_time=%s WHERE id=%s AND urL=%s", (timestamp, urlId[0], urlId[1]))
+            # temp url, kam smo bli preusmerjeni ?
+            if content is None: # prazen content
+                databasePutConn("UPDATE crawldb.page SET page_type_code='ERROR', accessed_time=%s WHERE id=%s AND urL=%s", (timestamp, urlId[0], urlId[1]))
             else:
                 # hash contenta
                 hashContent = hashlib.sha256(content.encode('utf-8')).hexdigest()
@@ -295,14 +325,20 @@ def process(nextUrl, lock):
                     #print("PODVOJENA STRAN")
                     databasePutConn("UPDATE crawldb.page SET html_content=%s, http_status_code=%s, page_type_code='DUPLICATE', accessed_time=%s, hash=%s WHERE id=%s AND urL=%s", (content, httpCode, timestamp, hashContent, urlId[0], urlId[1]))
                 else:
-                    if 'text/html' in contentType: #ugotovi kakšen tip je ta content
+                    contentType2 = contentTypeCheck(nextUrl, contentType) #ugotovi kakšen tip je ta content
+                    
+                    #if contentType is not None and 'text/html' in contentType:
+                    if contentType2 == 'HTML':
                         getHrefUrls(content) # get all href links
                         getJsUrls(content) # get all JS links
                         getImgUrls(content, urlId[0], timestamp) # get all img links
                         databasePutConn("UPDATE crawldb.page SET html_content=%s, http_status_code=%s, page_type_code='HTML', accessed_time=%s, hash=%s WHERE id=%s AND urL=%s", (content, httpCode, timestamp, hashContent, urlId[0], urlId[1]))
-                    else:
-                        databasePutConn("UPDATE crawldb.page SET http_status_code=%s, page_type_code='BINARY', accessed_time=%s WHERE id=%s AND urL=%s", (httpCode, timestamp, urlId[0], urlId[1]))
-                    
+                    elif contentType2 == 'BINARY':
+                        databasePutConn("UPDATE crawldb.page SET http_status_code=%s, page_type_code='BINARY', accessed_time=%s, hash=%s WHERE id=%s AND urL=%s", (httpCode, timestamp, hashContent, urlId[0], urlId[1]))
+                
+        else: # ni dovoljeno v robots
+            databasePutConn("UPDATE crawldb.page SET page_type_code='NOTALOWED', accessed_time=%s WHERE id=%s AND urL=%s", (timestamp, urlId[0], urlId[1]))
+        
         urlId = getNextUrl(lock)  # next url from frontier (DB)
     
     return True
@@ -317,6 +353,8 @@ def run():
     
     #initFrontier(SEEDARRAY) # clear DB !!
     initCrawler(SEEDARRAY)
+    initDataTypes()
+    
     
     start = time.time()
     
@@ -334,9 +372,17 @@ def run():
 if __name__ == "__main__":
     run()
     
+    
 
 
 
 # TODO
-# hendlanje redirectov 302 ?
+# certificate error -> problem pri urlopen() -> napačen url, ker nismo na www. !!
+# -> hendlanje redirectov 302 ?
+
+# shranjevanje v bazo -> tabelica link
+
+
 # pravilno upoštevaj relativne URLje! -> načeloma piše absolutni url v <head> baseurl ali og url
+
+# binary se ne racuna hash !!
