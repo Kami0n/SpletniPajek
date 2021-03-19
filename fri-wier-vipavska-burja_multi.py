@@ -355,32 +355,24 @@ def process(nextUrl, lock):
 def run():
     PROCESSES = multiprocessing.cpu_count() - 1
     PROCESSES = int(input("Enter number of processes: "))
-    
     print(f"Running with {PROCESSES} processes!")
     
-    #initFrontier(SEEDARRAY) # clear DB !!
     initCrawler(SEEDARRAY)
     initDataTypes()
     
-    
     start = time.time()
     
-    nextUrls = [0]
-    
+    nextUrls = ['']
     procs = [Process(target=process, args=(nextUrls,lock)) for i in range(PROCESSES)] # ustvarjanje procesov
-    
     for p in procs: p.start()
     for p in procs: p.join()
     
     driver.close()
-    
     print(f"FINISHED: Time taken = {time.time() - start:.10f}")
 
 if __name__ == "__main__":
+    #initFrontier(SEEDARRAY) # clear DB !!
     run()
-    
-    
-
 
 
 # TODO
