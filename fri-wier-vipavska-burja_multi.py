@@ -317,16 +317,15 @@ def process(nextUrl, lock):
             if content is None: # prazen content
                 databasePutConn("UPDATE crawldb.page SET page_type_code='ERROR', accessed_time=%s WHERE id=%s AND urL=%s", (timestamp, urlId[0], urlId[1]))
             else:
+                
+                contentType2 = contentTypeCheck(nextUrl, contentType) #ugotovi kakšen tip je ta content
+                
                 # hash contenta
                 hashContent = hashlib.sha256(content.encode('utf-8')).hexdigest()
                 # ugotovi duplicate
                 numberHash = databaseGetConn("SELECT COUNT(*) FROM crawldb.page WHERE hash=%s", (hashContent,))[0][0]
-                if numberHash != 0 : # ce je podvojena stran, shrani hash in continue
-                    #print("PODVOJENA STRAN")
-                    databasePutConn("UPDATE crawldb.page SET html_content=%s, http_status_code=%s, page_type_code='DUPLICATE', accessed_time=%s, hash=%s WHERE id=%s AND urL=%s", (content, httpCode, timestamp, hashContent, urlId[0], urlId[1]))
-                else:
-                    contentType2 = contentTypeCheck(nextUrl, contentType) #ugotovi kakšen tip je ta content
-                    
+                
+                if numberHash == 0 or contentType2 == 'BINARY': # ce je podvojena stran, shrani hash in continue
                     #if contentType is not None and 'text/html' in contentType:
                     if contentType2 == 'HTML':
                         getHrefUrls(content) # get all href links
@@ -335,7 +334,11 @@ def process(nextUrl, lock):
                         databasePutConn("UPDATE crawldb.page SET html_content=%s, http_status_code=%s, page_type_code='HTML', accessed_time=%s, hash=%s WHERE id=%s AND urL=%s", (content, httpCode, timestamp, hashContent, urlId[0], urlId[1]))
                     elif contentType2 == 'BINARY':
                         databasePutConn("UPDATE crawldb.page SET http_status_code=%s, page_type_code='BINARY', accessed_time=%s, hash=%s WHERE id=%s AND urL=%s", (httpCode, timestamp, hashContent, urlId[0], urlId[1]))
-                
+                    
+                else:
+                    #print("PODVOJENA STRAN")
+                    databasePutConn("UPDATE crawldb.page SET html_content=%s, http_status_code=%s, page_type_code='DUPLICATE', accessed_time=%s, hash=%s WHERE id=%s AND urL=%s", (content, httpCode, timestamp, hashContent, urlId[0], urlId[1]))
+                    
         else: # ni dovoljeno v robots
             databasePutConn("UPDATE crawldb.page SET page_type_code='NOTALOWED', accessed_time=%s WHERE id=%s AND urL=%s", (timestamp, urlId[0], urlId[1]))
         
