@@ -32,8 +32,8 @@ import hashlib
 
 TIMEOUT = 5
 RENDERTIMEOUT = 5
-start_time = time.time()
 dictIpTime = dict()
+delayRobots = dict()
 
 # 'http://83.212.82.40/testJsHref/' -> for testing onclick href
 SEEDARRAY = ['https://gov.si', 'https://evem.gov.si', 'https://e-uprava.gov.si', 'https://e-prostor.gov.si']
@@ -100,26 +100,26 @@ def checkRootSite(domain):
 
 def fetchPageContent(domain, webAddress, driver):
     del driver.requests  # pobrisi requeste za nazaj, ker nas zanimajo samo trenutni!
-    global start_time
     global dictIpTime
+    global delayRobots
     
     print(f"Retrieving content for web page URL '{webAddress}'")
-    
-    #razlikaCasa = (time.time() - start_time)
-    #if razlikaCasa < TIMEOUT:  # in če je isti IP !! -> drugače ni treba timeouta
-    #    print("TIMEOUT")
-    #    time.sleep(TIMEOUT - razlikaCasa)
-    
+
     try:
-        naslovIP = socket.gethostbyname(domain)
+            naslovIP = socket.gethostbyname(domain)
     except:
         print("ERR_NAME_NOT_RESOLVED")
         return None, 417, None
-        
+
+    if(delayRobots.get(naslovIP) is not None):
+        delayTime = delayRobots.get(naslovIP)
+    else:
+        delayTime = 5
+
     timeStampIzDict = dictIpTime.get(naslovIP)
     if timeStampIzDict is None:
         timeStampIzDict = time.time()
-    elif (time.time() - timeStampIzDict) < 5:
+    elif (time.time() - timeStampIzDict) < delayTime:
         time.sleep(5 - (time.time() - timeStampIzDict))
     
     driver.get(webAddress)
@@ -131,8 +131,7 @@ def fetchPageContent(domain, webAddress, driver):
     if hasattr(driver, 'page_source'): # smo dobili nazaj content?
         content = driver.page_source
         # print(f"Retrieved Web content (truncated to first 900 chars): \n\n'\n{html[:900]}\n'\n")
-        start_time = time.time()
-        
+
         if hasattr(driver.requests[0], 'response'): # did we get response back??
             steviloResponse = -1
             responseHtml = 0
@@ -239,6 +238,13 @@ if __name__ == "__main__":
                     databasePutConn("INSERT INTO crawldb.site (domain, robots_content, sitemap_content) VALUES (%s,%s,%s)", (domain, robotContent, sitemapContent))
                 else: # only robots.txt present
                     databasePutConn("INSERT INTO crawldb.site (domain, robots_content) VALUES (%s,%s)", (domain, robotContent))
+
+                if robots.agent('*').delay:  # robots & delay present
+                    delayRobots = {socket.gethostbyname(domain): robots.agent('*').delay}
+
+                if robots.agent('fri-wier-vipavska-burja').delay:  # robots & delay present
+                    delayRobots = {socket.gethostbyname(domain): robots.agent('fri-wier-vipavska-burja').delay}
+
             else: # no robots
                 databasePutConn("INSERT INTO crawldb.site (domain) VALUES (%s)", (domain,))
 
