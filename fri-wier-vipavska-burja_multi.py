@@ -138,33 +138,37 @@ def fetchPageContent(domain, webAddress, driver):
     # Timeout needed for Web page to render
     time.sleep(RENDERTIMEOUT)
     
-    if hasattr(driver, 'page_source'): # smo dobili nazaj content?
-        content = driver.page_source
-        # print(f"Retrieved Web content (truncated to first 900 chars): \n\n'\n{html[:900]}\n'\n")
-        start_time = time.time()
-        
-        if hasattr(driver.requests[0], 'response'): # did we get response back??
-            steviloResponse = -1
-            responseContent = 0
-            responseStatusCode = 0
+    try:
+        if hasattr(driver, 'page_source'): # smo dobili nazaj content?
+            content = driver.page_source
+            # print(f"Retrieved Web content (truncated to first 900 chars): \n\n'\n{html[:900]}\n'\n")
+            start_time = time.time()
             
-            for request in driver.requests:
-                if request.response:
-                    #print( steviloResponse, request.url, request.response.status_code, request.response.headers['Content-Type'] )
-                    steviloResponse += 1
-                    if request.response.headers['Content-Type'] is not None and 'text/html' in request.response.headers['Content-Type']:
-                        responseContent = steviloResponse
+            if hasattr(driver.requests[0], 'response'): # did we get response back??
+                steviloResponse = -1
+                responseContent = 0
+                responseStatusCode = 0
+                
+                for request in driver.requests:
+                    if request.response:
+                        #print( steviloResponse, request.url, request.response.status_code, request.response.headers['Content-Type'] )
+                        steviloResponse += 1
+                        if request.response.headers['Content-Type'] is not None and 'text/html' in request.response.headers['Content-Type']:
+                            responseContent = steviloResponse
+                
+                if driver.requests[responseStatusCode].response is not None:
+                    return content, driver.requests[responseStatusCode].response.status_code, driver.requests[responseContent].response.headers['Content-Type']
             
-            if driver.requests[responseStatusCode].response is not None:
-                return content, driver.requests[responseStatusCode].response.status_code, driver.requests[responseContent].response.headers['Content-Type']
-        
-        #for request in driver.requests:
-        #    if request.response:
-        #         print( request.url, request.response.status_code, request.response.headers['Content-Type'] )
-        
-        #print("\nFetch: No status code code!\n")
-        #return content, 200, None
-        return None, 417, None
+            #for request in driver.requests:
+            #    if request.response:
+            #         print( request.url, request.response.status_code, request.response.headers['Content-Type'] )
+            
+            #print("\nFetch: No status code code!\n")
+            #return content, 200, None
+    except:
+        pass
+    
+    return None, 417, None
 
 def urlCanonization(inputUrl):
     outputUrl = url.parse(inputUrl).strip().defrag().canonical().abspath().utf8
@@ -176,10 +180,11 @@ def saveUrlToDB(inputUrl, currPageId):
     #    pass
     #else:
     # preveri če je link na *.gov.si, drugace se ga ne uposteva
-    if re.match(r'.*([\.]gov.si[\/]).*', inputUrl):
+    if re.match(r'.*([\.]gov.si(^$|[\/])).*', inputUrl):
         parsed_url = urlCanonization(inputUrl)  # URL CANONIZATION
         try:
-            newPageId = databaseGetConn("INSERT INTO crawldb.page (page_type_code, url) VALUES ('FRONTIER', %s) RETURNING id", (parsed_url,))
+            #newPageId = databaseGetConn("INSERT INTO crawldb.page (page_type_code, url) VALUES ('FRONTIER', %s) RETURNING id", (parsed_url,))
+            newPageId = databaseGetConn("INSERT INTO crawldb.page (page_type_code, url) VALUES ('FRONTIER', %s) ON CONFLICT(url) DO UPDATE SET url=%s RETURNING id ", (parsed_url,))
             databasePutConn("INSERT INTO crawldb.link (from_page,to_page) VALUES (%s, %s) ", (currPageId,newPageId[0][0]))
         except:
             #print("URL ze v DB")  # hendlanje podvojitev
@@ -385,3 +390,15 @@ if __name__ == "__main__":
 # pravilno upoštevaj relativne URLje! -> načeloma piše absolutni url v <head> baseurl ali og url
 
 # binary se ne racuna hash !!
+
+# IZ DISCORDA:
+# timeout upoševajoč zapis v robots.txt (če obstaja) ✓
+# timeout da gleda web address (močogi redirecti) ne domain X (mogoče ni smiselno, will debate :slight_smile: )
+# JS linki ✓
+# poročilo kašna vizualizacija
+# hranjenje errorjev v bazo (za v poročilo št. 400, 500, 300 errorjejv) ✓
+# če link vsebuje .pdf .doc samo zapišemo v bazo, ne obiščemo strani, če nima končnice a je vseeno binarna datoteka se končnica nahaja v glavi
+# slike v bazo (če dela prav). Poglej navodila (a href slika)
+# page data
+# če ima site www, ga za zapis v bazo vržemo ven. Isto pri primerjavi z bazo če je v frontirerju link z www
+# kateri link se zapiše v bazo ob redirectu. Oba ali samo enega. Če ima prvi link code 302, zapišemo v bazo, nov zapis v bazi z drugim urljem pa nosi content
