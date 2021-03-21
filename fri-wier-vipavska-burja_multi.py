@@ -32,8 +32,9 @@ import hashlib
 
 TIMEOUT = 5
 RENDERTIMEOUT = 5
-start_time = time.time()
 dictIpTime = dict()
+delayRobots = dict()
+
 
 # 'http://83.212.82.40/testJsHref/' -> for testing onclick href
 SEEDARRAY = ['https://gov.si/', 'https://evem.gov.si/', 'https://e-uprava.gov.si/', 'https://e-prostor.gov.si/']
@@ -105,8 +106,8 @@ def checkRootSite(domain):
 
 def fetchPageContent(domain, webAddress, driver):
     del driver.requests  # pobrisi requeste za nazaj, ker nas zanimajo samo trenutni!
-    global start_time
     global dictIpTime
+    global delayRobots
     
     #print(f"Retrieving content for web page URL '{webAddress}'")
     
@@ -120,12 +121,17 @@ def fetchPageContent(domain, webAddress, driver):
     except:
         #print("ERR_NAME_NOT_RESOLVED")
         return None, 417, None
-        
+    
+    if(delayRobots.get(naslovIP) is not None):
+        delayTime = delayRobots.get(naslovIP)
+    else:
+        delayTime = TIMEOUT
+    
     timeStampIzDict = dictIpTime.get(naslovIP)
     if timeStampIzDict is None:
         timeStampIzDict = time.time()
-    elif (time.time() - timeStampIzDict) < 5:
-        time.sleep(5 - (time.time() - timeStampIzDict))
+    elif (time.time() - timeStampIzDict) < delayTime:
+        time.sleep(delayTime - (time.time() - timeStampIzDict))
     
     try:
         driver.get(webAddress)
@@ -226,7 +232,11 @@ def getImgUrls(content, pageId, timestamp):
                 # detect image format
                 if pathlib.Path(imageName).suffix in '.svg':
                     # data?
-                    databasePutConn("INSERT INTO crawldb.image (page_id, filename, content_type, accessed_time) VALUES (%s,%s,%s,%s)", (pageId, imageName, "svg", timestamp))
+                    try:
+                        databasePutConn("INSERT INTO crawldb.image (page_id, filename, content_type, accessed_time) VALUES (%s,%s,%s,%s)", (pageId, imageName, "svg", timestamp))
+                    except:
+                        # if link too long
+                        pass
                 else:
                     try:
                         pil_im = Image.open(urlopen(parsed_url_img)) 
@@ -303,6 +313,12 @@ def process(nextUrl, lock):
                     databasePutConn("INSERT INTO crawldb.site (domain, robots_content, sitemap_content) VALUES (%s,%s,%s)", (domain, robotContent, sitemapContent))
                 else: # only robots.txt present
                     databasePutConn("INSERT INTO crawldb.site (domain, robots_content) VALUES (%s,%s)", (domain, robotContent))
+                
+                if robots.agent('*').delay:  # robots & delay present
+                    delayRobots = {socket.gethostbyname(domain): robots.agent('*').delay}
+                if robots.agent('fri-wier-vipavska-burja').delay:  # robots & delay present
+                    delayRobots = {socket.gethostbyname(domain): robots.agent('fri-wier-vipavska-burja').delay}
+                
             else: # no robots
                 databasePutConn("INSERT INTO crawldb.site (domain) VALUES (%s)", (domain,))
             # link page with site
