@@ -24,6 +24,7 @@ from seleniumwire import webdriver
 from selenium.webdriver.chrome.options import Options
 import url
 from urllib.parse import urlparse
+from urllib.parse import urljoin
 from urllib.request import urlopen
 from reppy import Robots
 import socket
@@ -190,7 +191,7 @@ def saveUrlToDB(inputUrl, currPageId):
         parsed_url = urlCanonization(inputUrl)  # URL CANONIZATION
         try:
             #newPageId = databaseGetConn("INSERT INTO crawldb.page (page_type_code, url) VALUES ('FRONTIER', %s) RETURNING id", (parsed_url,))
-            newPageId = databaseGetConn("INSERT INTO crawldb.page (page_type_code, url) VALUES ('FRONTIER', %s) ON CONFLICT(url) DO UPDATE SET url=%s RETURNING id ", (parsed_url,))
+            newPageId = databaseGetConn("INSERT INTO crawldb.page (page_type_code, url) VALUES ('FRONTIER', %s) ON CONFLICT(url) DO UPDATE SET url=%s RETURNING id ", (parsed_url,parsed_url))
             databasePutConn("INSERT INTO crawldb.link (from_page,to_page) VALUES (%s, %s) ", (currPageId,newPageId[0][0]))
         except:
             #print("URL ze v DB")  # hendlanje podvojitev
@@ -277,14 +278,29 @@ def contentTypeCheck(link, contentType):
             return 'HTML'
         else:
             return 'BINARY'
-    elif link is not None: # link ugotavljanje iz linka
+    elif link is not None: # ugotavljanje iz linka
         if pathlib.Path(os.path.basename(urlparse(link).path)).suffix in mozneKoncnice:
             return 'BINARY'
         return 'HTML'
     return 'ERROR'
 
+def checkLinkForBinary(link):
+    global mozneKoncnice
+    if link is not None: # ugotavljanje iz linka
+        koncninca = pathlib.Path(os.path.basename(urlparse(link).path)).suffix
+        if koncninca in mozneKoncnice:
+            return 'BINARY', koncninca.upper()
+    return 'HTML', ''
+
+def robotsValidate(content):
+    if content:
+        if "not found" not in content.lower() and 'user-agent:' in content.lower():
+            return True
+    return False
+
 # delovna funkcija -> ki predstavlja en proces
 def process(nextUrl, lock):
+    global delayRobots
     
     urlId = None
     while urlId is None:
@@ -293,19 +309,22 @@ def process(nextUrl, lock):
     
     while urlId is not None:  # MAIN LOOP
         nextUrl = urlId[1]
+        parsedUrl = urlparse(nextUrl)
         
         print("PID:",'{0:06}'.format(os.getpid())," Next URL:",nextUrl)
         
         robots = None
-        domain = urlparse(nextUrl).netloc
-        
+        domain = parsedUrl.netloc
+        if 'www.' in domain:
+            domain = domain.replace('www.','')
         if not checkRootSite(domain):  # site unknown (domain not in sites)
-            #with lock:
-            #print("\nNEZNAN site: " + domain)
-            robotContent, httpCode, contType = fetchPageContent(domain, nextUrl + '/robots.txt', driver)
-            robotContent = driver.find_elements_by_tag_name("body")[0].text  # robots.txt -> get only text, without html tags
-            if httpCode == 200 and "Not Found" not in robotContent:
-                robots = Robots.parse(nextUrl + '/robots.txt', robotContent)
+            robotsUrl = urljoin(parsedUrl.scheme+'://'+domain, 'robots.txt') # generate robots path
+            robotContent, httpCode, contType = fetchPageContent(domain, robotsUrl, driver)
+            
+            if httpCode < 400 and robotsValidate(robotContent):
+                robotContent = driver.find_elements_by_tag_name("body")[0].text  # robots.txt -> get only text, without html tags
+                robots = Robots.parse(robotsUrl, robotContent)
+                
                 for sitemap in robots.sitemaps:
                     sitemapContent, httpCode, contType = fetchPageContent(domain, sitemap, driver)
                 
@@ -336,34 +355,39 @@ def process(nextUrl, lock):
         
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         if robots is None or robots.allowed(nextUrl, 'my-user-agent'): # does robots allow us to go on this link?
-            # download page content
-            content, httpCode, contentType = fetchPageContent(domain, nextUrl, driver)
-            # temp url, kam smo bli preusmerjeni ?
-            if content is None: # prazen content
-                databasePutConn("UPDATE crawldb.page SET page_type_code='ERROR', accessed_time=%s WHERE id=%s AND urL=%s", (timestamp, urlId[0], urlId[1]))
-            else:
-                
-                contentType2 = contentTypeCheck(nextUrl, contentType) #ugotovi kakšen tip je ta content
-                
-                # hash contenta
-                hashContent = hashlib.sha256(content.encode('utf-8')).hexdigest()
-                # ugotovi duplicate
-                numberHash = databaseGetConn("SELECT COUNT(*) FROM crawldb.page WHERE hash=%s", (hashContent,))[0][0]
-                
-                if numberHash == 0 or contentType2 == 'BINARY': # ce je podvojena stran, shrani hash in continue
-                    #if contentType is not None and 'text/html' in contentType:
-                    if contentType2 == 'HTML':
-                        getHrefUrls(content, urlId[0]) # get all href links
-                        getJsUrls(content, urlId[0]) # get all JS links
-                        getImgUrls(content, urlId[0], timestamp) # get all img links
-                        databasePutConn("UPDATE crawldb.page SET html_content=%s, http_status_code=%s, page_type_code='HTML', accessed_time=%s, hash=%s WHERE id=%s AND urL=%s", (content, httpCode, timestamp, hashContent, urlId[0], urlId[1]))
-                    elif contentType2 == 'BINARY':
-                        databasePutConn("UPDATE crawldb.page SET http_status_code=%s, page_type_code='BINARY', accessed_time=%s, hash=%s WHERE id=%s AND urL=%s", (httpCode, timestamp, hashContent, urlId[0], urlId[1]))
-                    
+            
+            linkType,binaryType = checkLinkForBinary(nextUrl)
+            # preveri ali ima stran koncnico ...
+            if linkType == 'HTML':
+                # download page content
+                content, httpCode, contentType = fetchPageContent(domain, nextUrl, driver)
+                # temp url, kam smo bli preusmerjeni ?
+                if content is None: # prazen content
+                    databasePutConn("UPDATE crawldb.page SET page_type_code='ERROR', accessed_time=%s WHERE id=%s AND urL=%s", (timestamp, urlId[0], urlId[1]))
                 else:
-                    #print("PODVOJENA STRAN")
-                    databasePutConn("UPDATE crawldb.page SET html_content=%s, http_status_code=%s, page_type_code='DUPLICATE', accessed_time=%s, hash=%s WHERE id=%s AND urL=%s", (content, httpCode, timestamp, hashContent, urlId[0], urlId[1]))
+                    contentType2 = contentTypeCheck(nextUrl, contentType) #ugotovi kakšen tip je ta content
+                    # hash contenta
+                    hashContent = hashlib.sha256(content.encode('utf-8')).hexdigest()
+                    # ugotovi duplicate
+                    numberHash = databaseGetConn("SELECT COUNT(*) FROM crawldb.page WHERE hash=%s", (hashContent,))[0][0]
                     
+                    if numberHash == 0 or contentType2 == 'BINARY': # ce je podvojena stran, shrani hash in continue
+                        #if contentType is not None and 'text/html' in contentType:
+                        if contentType2 == 'HTML':
+                            getHrefUrls(content, urlId[0]) # get all href links
+                            getJsUrls(content, urlId[0]) # get all JS links
+                            getImgUrls(content, urlId[0], timestamp) # get all img links
+                            databasePutConn("UPDATE crawldb.page SET html_content=%s, http_status_code=%s, page_type_code='HTML', accessed_time=%s, hash=%s WHERE id=%s AND urL=%s", (content, httpCode, timestamp, hashContent, urlId[0], urlId[1]))
+                        elif contentType2 == 'BINARY':
+                            databasePutConn("UPDATE crawldb.page SET http_status_code=%s, page_type_code='BINARY', accessed_time=%s WHERE id=%s AND urL=%s", (httpCode, timestamp, urlId[0], urlId[1]))
+                    else: # duplicated page
+                        databasePutConn("UPDATE crawldb.page SET html_content=%s, http_status_code=%s, page_type_code='DUPLICATE', accessed_time=%s, hash=%s WHERE id=%s AND urL=%s", (content, httpCode, timestamp, hashContent, urlId[0], urlId[1]))
+            
+            else: # BINARY page -> detected from link
+                
+                databasePutConn("UPDATE crawldb.page SET http_status_code=%s, page_type_code='BINARY', accessed_time=%s WHERE id=%s AND urL=%s", (httpCode, timestamp, urlId[0], urlId[1]))
+                databasePutConn("INSERT INTO crawldb.page_data SET (page_id, data_type_code) VALUES (%s,%s,%s)", (urlId[0],binaryType)) # TODO za dodat DATA !!
+        
         else: # ni dovoljeno v robots
             databasePutConn("UPDATE crawldb.page SET page_type_code='NOTALOWED', accessed_time=%s WHERE id=%s AND urL=%s", (timestamp, urlId[0], urlId[1]))
         
@@ -392,7 +416,7 @@ def run():
     print(f"FINISHED: Time taken = {time.time() - start:.10f}")
 
 if __name__ == "__main__":
-    #initFrontier(SEEDARRAY) # clear DB !!
+    initFrontier(SEEDARRAY) # clear DB !!
     run()
 
 
@@ -408,13 +432,15 @@ if __name__ == "__main__":
 # binary se ne racuna hash !!
 
 # IZ DISCORDA:
-# timeout upoševajoč zapis v robots.txt (če obstaja) ✓
-# timeout da gleda web address (močogi redirecti) ne domain X (mogoče ni smiselno, will debate :slight_smile: )
-# JS linki ✓
-# poročilo kašna vizualizacija
-# hranjenje errorjev v bazo (za v poročilo št. 400, 500, 300 errorjejv) ✓
-# če link vsebuje .pdf .doc samo zapišemo v bazo, ne obiščemo strani, če nima končnice a je vseeno binarna datoteka se končnica nahaja v glavi
+# ✓ timeout upoševajoč zapis v robots.txt (če obstaja)
+# timeout da gleda web address (močogi redirecti) ne domain X (mogoče ni smiselno, will debate)
+# ✓ JS linki
+# ✓ hranjenje errorjev v bazo (za v poročilo št. 400, 500, 300 errorjejv)
+
+# ✓ če link vsebuje .pdf .doc samo zapišemo v bazo, ne obiščemo strani, če nima končnice a je vseeno binarna datoteka se končnica nahaja v glavi
 # slike v bazo (če dela prav). Poglej navodila (a href slika)
 # page data
-# če ima site www, ga za zapis v bazo vržemo ven. Isto pri primerjavi z bazo če je v frontirerju link z www
+# ✓ če ima site www, ga za zapis v bazo vržemo ven. Isto pri primerjavi z bazo če je v frontirerju link z www
 # kateri link se zapiše v bazo ob redirectu. Oba ali samo enega. Če ima prvi link code 302, zapišemo v bazo, nov zapis v bazi z drugim urljem pa nosi content
+
+# poročilo kašna vizualizacija

@@ -6,8 +6,6 @@ SELECT COUNT(*) FROM crawldb.page;
 
 
 SELECT * FROM crawldb.site ORDER BY id;
-
-
 SELECT * FROM crawldb.page ORDER BY id;
 
 SELECT * FROM crawldb.page WHERE page_type_code!='FRONTIER' AND page_type_code!='HTML' ORDER BY id;
