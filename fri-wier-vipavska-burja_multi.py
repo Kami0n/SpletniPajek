@@ -32,6 +32,7 @@ from PIL import Image
 import hashlib
 
 TIMEOUT = 5
+USERAGENT = 'fri-wier-vipavska-burja'
 RENDERTIMEOUT = 5
 dictIpTime = dict()
 delayRobots = dict()
@@ -44,7 +45,7 @@ chrome_options = Options()
 # If you comment the following line, a browser will show ...
 chrome_options.add_argument("--headless")
 # Adding a specific user agent
-chrome_options.add_argument("user-agent=fri-wier-vipavska-burja")
+chrome_options.add_argument("user-agent="+USERAGENT)
 # disable console.log
 chrome_options.add_argument("--log-level=3")
 # ignore SSL certificate errors
@@ -99,7 +100,7 @@ def initDataTypes():
     global mozneKoncnice
     dbTypes = databaseGetConn('SELECT * FROM crawldb.data_type ')
     for dbType in dbTypes:
-        mozneKoncnice.append('.'+dbType[0].lower())
+        mozneKoncnice.append(dbType[0].lower())
 
 def checkRootSite(domain):
     data = databaseGetConn("SELECT * FROM crawldb.site WHERE domain='" + domain + "'")
@@ -219,22 +220,22 @@ def getImgUrls(content, pageId, timestamp):
     for element in driver.find_elements_by_tag_name("img"):
         src = element.get_attribute('src')
         if src:
-            if "data:image" in src: # is image encoded with data:
-                #print("SLIKA encoded!")
+            if "data:image" in src: # is image encoded in src field:
                 if element.get_attribute('alt'):
                     databasePutConn("INSERT INTO crawldb.image (page_id, filename, content_type, data, accessed_time) VALUES (%s,%s,%s,%s,%s)", (pageId, 'Alt: '+element.get_attribute('alt'), 'data:image', src, timestamp))
                 else:
                     databasePutConn("INSERT INTO crawldb.image (page_id, filename, content_type, data, accessed_time) VALUES (%s,%s,%s,%s,%s)", (pageId, 'No name', 'data:image', src, timestamp))
                     
             else: # is image just url
-                parsed_url_img = urlCanonization(src)
+                saveImageFromUrl(src, pageId, timestamp)
+                """parsed_url_img = urlCanonization(src)
                 imageName = os.path.basename(urlparse(parsed_url_img).path)
                 #print("SLIKA: " + imageName)
                 # detect image format
                 if pathlib.Path(imageName).suffix in '.svg':
                     # data?
                     try:
-                        databasePutConn("INSERT INTO crawldb.image (page_id, filename, content_type, accessed_time) VALUES (%s,%s,%s,%s)", (pageId, imageName, "svg", timestamp))
+                        databasePutConn("INSERT INTO crawldb.image (page_id, filename, content_type, accessed_time) VALUES (%s,%s,%s,%s)", (pageId, imageName, 'SVG', timestamp))
                     except:
                         # if link too long
                         pass
@@ -246,7 +247,30 @@ def getImgUrls(content, pageId, timestamp):
                         imageBytes = b.getvalue()
                         databasePutConn("INSERT INTO crawldb.image (page_id, filename, content_type, data, accessed_time) VALUES (%s,%s,%s,%s,%s)", (pageId, imageName, pil_im.format, imageBytes, timestamp))
                     except:
-                        pass # ulovi napako SSL
+                        pass # ulovi napako SSL"""
+
+def saveImageFromUrl(url, pageId, timestamp):
+    parsed_url_img = urlCanonization(url)
+    imageName = os.path.basename(urlparse(parsed_url_img).path)
+    #print("SLIKA: " + imageName)
+    # detect image format
+    if pathlib.Path(imageName).suffix in '.svg':
+        # data?
+        try:
+            databasePutConn("INSERT INTO crawldb.image (page_id, filename, content_type, accessed_time) VALUES (%s,%s,%s,%s)", (pageId, imageName, 'SVG', timestamp))
+        except:
+            # if link too long
+            pass
+    else:
+        try:
+            pil_im = Image.open(urlopen(parsed_url_img)) 
+            #b = io.BytesIO()
+            #pil_im.save(b, pil_im.format)
+            #imageBytes = b.getvalue()
+            databasePutConn("INSERT INTO crawldb.image (page_id, filename, content_type, accessed_time) VALUES (%s,%s,%s,%s)", (pageId, imageName, pil_im.format, timestamp))
+        except:
+            # catch errors (SSL)
+            pass
 
 def getNextUrl_old(lock):
     # pridobi naslednji URL
@@ -278,18 +302,18 @@ def contentTypeCheck(link, contentType):
             return 'HTML'
         else:
             return 'BINARY'
-    elif link is not None: # ugotavljanje iz linka
-        if pathlib.Path(os.path.basename(urlparse(link).path)).suffix in mozneKoncnice:
-            return 'BINARY'
-        return 'HTML'
-    return 'ERROR'
+    return checkLinkForBinary(link)
+    #return 'ERROR'
 
 def checkLinkForBinary(link):
     global mozneKoncnice
+    mozneImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'weba', 'bmp', 'tiff', 'svg']
     if link is not None: # ugotavljanje iz linka
-        koncninca = pathlib.Path(os.path.basename(urlparse(link).path)).suffix
+        koncninca = pathlib.Path(os.path.basename(urlparse(link).path)).suffix.lower().replace('.','')
         if koncninca in mozneKoncnice:
             return 'BINARY', koncninca.upper()
+        elif koncninca in mozneImage:
+            return 'BINARY', 'IMAGE'
     return 'HTML', ''
 
 def robotsValidate(content):
@@ -301,7 +325,7 @@ def robotsValidate(content):
 # delovna funkcija -> ki predstavlja en proces
 def process(nextUrl, lock):
     global delayRobots
-    
+    initDataTypes()
     urlId = None
     while urlId is None:
         time.sleep(2)
@@ -335,8 +359,8 @@ def process(nextUrl, lock):
                 
                 if robots.agent('*').delay:  # robots & delay present
                     delayRobots = {socket.gethostbyname(domain): robots.agent('*').delay}
-                if robots.agent('fri-wier-vipavska-burja').delay:  # robots & delay present
-                    delayRobots = {socket.gethostbyname(domain): robots.agent('fri-wier-vipavska-burja').delay}
+                if robots.agent(USERAGENT).delay:  # robots & delay present
+                    delayRobots = {socket.gethostbyname(domain): robots.agent(USERAGENT).delay}
                 
             else: # no robots
                 databasePutConn("INSERT INTO crawldb.site (domain) VALUES (%s)", (domain,))
@@ -354,8 +378,7 @@ def process(nextUrl, lock):
                 robots = None
         
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        if robots is None or robots.allowed(nextUrl, 'my-user-agent'): # does robots allow us to go on this link?
-            
+        if robots is None or robots.allowed(nextUrl, USERAGENT) : # does robots allow us to go on this link?
             linkType,binaryType = checkLinkForBinary(nextUrl)
             # preveri ali ima stran koncnico ...
             if linkType == 'HTML':
@@ -365,29 +388,35 @@ def process(nextUrl, lock):
                 if content is None: # prazen content
                     databasePutConn("UPDATE crawldb.page SET page_type_code='ERROR', accessed_time=%s WHERE id=%s AND urL=%s", (timestamp, urlId[0], urlId[1]))
                 else:
-                    contentType2 = contentTypeCheck(nextUrl, contentType) #ugotovi kakšen tip je ta content
+                    #contentType2 = contentTypeCheck(nextUrl, contentType) #ugotovi kakšen tip je ta content
                     # hash contenta
                     hashContent = hashlib.sha256(content.encode('utf-8')).hexdigest()
                     # ugotovi duplicate
                     numberHash = databaseGetConn("SELECT COUNT(*) FROM crawldb.page WHERE hash=%s", (hashContent,))[0][0]
                     
-                    if numberHash == 0 or contentType2 == 'BINARY': # ce je podvojena stran, shrani hash in continue
+                    if numberHash == 0: # ce je podvojena stran, shrani hash in continue
+                    #if numberHash == 0 or contentType2 == 'HTML': # ce je podvojena stran, shrani hash in continue
                         #if contentType is not None and 'text/html' in contentType:
-                        if contentType2 == 'HTML':
-                            getHrefUrls(content, urlId[0]) # get all href links
-                            getJsUrls(content, urlId[0]) # get all JS links
-                            getImgUrls(content, urlId[0], timestamp) # get all img links
-                            databasePutConn("UPDATE crawldb.page SET html_content=%s, http_status_code=%s, page_type_code='HTML', accessed_time=%s, hash=%s WHERE id=%s AND urL=%s", (content, httpCode, timestamp, hashContent, urlId[0], urlId[1]))
-                        elif contentType2 == 'BINARY':
-                            databasePutConn("UPDATE crawldb.page SET http_status_code=%s, page_type_code='BINARY', accessed_time=%s WHERE id=%s AND urL=%s", (httpCode, timestamp, urlId[0], urlId[1]))
+                        #if contentType2 == 'HTML':
+                        getHrefUrls(content, urlId[0]) # get all href links
+                        getJsUrls(content, urlId[0]) # get all JS links
+                        getImgUrls(content, urlId[0], timestamp) # get all img links
+                        databasePutConn("UPDATE crawldb.page SET html_content=%s, http_status_code=%s, page_type_code='HTML', accessed_time=%s, hash=%s WHERE id=%s AND urL=%s", (content, httpCode, timestamp, hashContent, urlId[0], urlId[1]))
+                        #elif contentType2 == 'BINARY':
+                        #    databasePutConn("UPDATE crawldb.page SET http_status_code=%s, page_type_code='BINARY', accessed_time=%s WHERE id=%s AND urL=%s", (httpCode, timestamp, urlId[0], urlId[1]))
+                        #    databasePutConn("INSERT INTO crawldb.page_data SET (page_id, data_type_code) VALUES (%s,%s,%s)", (urlId[0],binaryType))
+                        
                     else: # duplicated page
                         databasePutConn("UPDATE crawldb.page SET html_content=%s, http_status_code=%s, page_type_code='DUPLICATE', accessed_time=%s, hash=%s WHERE id=%s AND urL=%s", (content, httpCode, timestamp, hashContent, urlId[0], urlId[1]))
-            
             else: # BINARY page -> detected from link
-                
-                databasePutConn("UPDATE crawldb.page SET http_status_code=%s, page_type_code='BINARY', accessed_time=%s WHERE id=%s AND urL=%s", (httpCode, timestamp, urlId[0], urlId[1]))
-                databasePutConn("INSERT INTO crawldb.page_data SET (page_id, data_type_code) VALUES (%s,%s,%s)", (urlId[0],binaryType)) # TODO za dodat DATA !!
-        
+                # http_status_code=%s,  httpCode, 
+                databasePutConn("UPDATE crawldb.page SET page_type_code='BINARY', accessed_time=%s WHERE id=%s AND urL=%s", (timestamp, urlId[0], urlId[1]))
+                 
+                if binaryType == 'IMAGE':
+                    saveImageFromUrl(urlId[1], urlId[0], timestamp)
+                else:
+                    databasePutConn("INSERT INTO crawldb.page_data (page_id, data_type_code) VALUES (%s,%s)", (urlId[0],binaryType))
+               
         else: # ni dovoljeno v robots
             databasePutConn("UPDATE crawldb.page SET page_type_code='NOTALOWED', accessed_time=%s WHERE id=%s AND urL=%s", (timestamp, urlId[0], urlId[1]))
         
@@ -403,7 +432,6 @@ def run():
     print(f"Running with {PROCESSES} processes!")
     
     initCrawler(SEEDARRAY)
-    initDataTypes()
     
     start = time.time()
     
@@ -416,7 +444,7 @@ def run():
     print(f"FINISHED: Time taken = {time.time() - start:.10f}")
 
 if __name__ == "__main__":
-    initFrontier(SEEDARRAY) # clear DB !!
+    #initFrontier(SEEDARRAY) # clear DB !!
     run()
 
 
