@@ -106,10 +106,9 @@ def checkRootSite(domain):
     data = databaseGetConn("SELECT * FROM crawldb.site WHERE domain='" + domain + "'")
     return data
 
-def fetchPageContent(domain, webAddress, driver):
+def fetchPageContent(domain, webAddress, driver, delayRobots):
     del driver.requests  # pobrisi requeste za nazaj, ker nas zanimajo samo trenutni!
     global dictIpTime
-    global delayRobots
     
     #print(f"Retrieving content for web page URL '{webAddress}'")
     
@@ -323,8 +322,7 @@ def robotsValidate(content):
     return False
 
 # delovna funkcija -> ki predstavlja en proces
-def process(nextUrl, lock):
-    global delayRobots
+def process(nextUrl, lock, delayRobots):
     initDataTypes()
     urlId = None
     while urlId is None:
@@ -343,14 +341,14 @@ def process(nextUrl, lock):
             domain = domain.replace('www.','')
         if not checkRootSite(domain):  # site unknown (domain not in sites)
             robotsUrl = urljoin(parsedUrl.scheme+'://'+domain, 'robots.txt') # generate robots path
-            robotContent, httpCode, contType = fetchPageContent(domain, robotsUrl, driver)
+            robotContent, httpCode, contType = fetchPageContent(domain, robotsUrl, driver, delayRobots)
             
             if httpCode < 400 and robotsValidate(robotContent):
                 robotContent = driver.find_elements_by_tag_name("body")[0].text  # robots.txt -> get only text, without html tags
                 robots = Robots.parse(robotsUrl, robotContent)
                 
                 for sitemap in robots.sitemaps:
-                    sitemapContent, httpCode, contType = fetchPageContent(domain, sitemap, driver)
+                    sitemapContent, httpCode, contType = fetchPageContent(domain, sitemap, driver, delayRobots)
                 
                 if robots.sitemaps: # robots & sitemap present
                     databasePutConn("INSERT INTO crawldb.site (domain, robots_content, sitemap_content) VALUES (%s,%s,%s)", (domain, robotContent, sitemapContent))
@@ -383,7 +381,7 @@ def process(nextUrl, lock):
             # preveri ali ima stran koncnico ...
             if linkType == 'HTML':
                 # download page content
-                content, httpCode, contentType = fetchPageContent(domain, nextUrl, driver)
+                content, httpCode, contentType = fetchPageContent(domain, nextUrl, driver, delayRobots)
                 # temp url, kam smo bli preusmerjeni ?
                 if content is None: # prazen content
                     databasePutConn("UPDATE crawldb.page SET page_type_code='ERROR', accessed_time=%s WHERE id=%s AND urL=%s", (timestamp, urlId[0], urlId[1]))
@@ -430,13 +428,14 @@ def run():
     PROCESSES = multiprocessing.cpu_count() - 1
     PROCESSES = int(input("Enter number of processes: "))
     print(f"Running with {PROCESSES} processes!")
+    global delayRobots
     
     initCrawler(SEEDARRAY)
     
     start = time.time()
     
     nextUrls = ['']
-    procs = [Process(target=process, args=(nextUrls,lock)) for i in range(PROCESSES)] # ustvarjanje procesov
+    procs = [Process(target=process, args=(nextUrls,lock, delayRobots)) for i in range(PROCESSES)] # ustvarjanje procesov
     for p in procs: p.start()
     for p in procs: p.join()
     
@@ -448,27 +447,6 @@ if __name__ == "__main__":
     run()
 
 
-# TODO
-# certificate error -> problem pri urlopen() -> napačen url, ker nismo na www. !!
-# -> hendlanje redirectov 302 ?
-
-# shranjevanje v bazo -> tabelica link
-
-
-# pravilno upoštevaj relativne URLje! -> načeloma piše absolutni url v <head> baseurl ali og url
-
-# binary se ne racuna hash !!
-
 # IZ DISCORDA:
-# ✓ timeout upoševajoč zapis v robots.txt (če obstaja)
-# timeout da gleda web address (močogi redirecti) ne domain X (mogoče ni smiselno, will debate)
-# ✓ JS linki
-# ✓ hranjenje errorjev v bazo (za v poročilo št. 400, 500, 300 errorjejv)
-
-# ✓ če link vsebuje .pdf .doc samo zapišemo v bazo, ne obiščemo strani, če nima končnice a je vseeno binarna datoteka se končnica nahaja v glavi
-# slike v bazo (če dela prav). Poglej navodila (a href slika)
-# page data
-# ✓ če ima site www, ga za zapis v bazo vržemo ven. Isto pri primerjavi z bazo če je v frontirerju link z www
 # kateri link se zapiše v bazo ob redirectu. Oba ali samo enega. Če ima prvi link code 302, zapišemo v bazo, nov zapis v bazi z drugim urljem pa nosi content
-
-# poročilo kašna vizualizacija
+# sitemap če se upošteva
