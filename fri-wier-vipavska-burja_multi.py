@@ -187,7 +187,8 @@ def saveUrlToDB(inputUrl, currPageId):
     #    pass
     #else:
     # preveri če je link na *.gov.si, drugace se ga ne uposteva
-    if re.match(r'.*([\.]gov.si(^$|[\/])).*', inputUrl):
+    domena = urlparse(inputUrl).netloc
+    if re.match(r'.*([\.]gov.si(^$|[\/])).*', domena) and ('facebook.com' not in inputUrl or 'twitter.com' not in inputUrl or 'linkedin.com' not in inputUrl):
         parsed_url = urlCanonization(inputUrl)  # URL CANONIZATION
         try:
             #newPageId = databaseGetConn("INSERT INTO crawldb.page (page_type_code, url) VALUES ('FRONTIER', %s) RETURNING id", (parsed_url,))
