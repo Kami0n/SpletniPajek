@@ -286,7 +286,6 @@ def getNextUrl(lock):
     with lock:
         
         #sitesProcessed = databaseGetConn("SELECT COUNT(*) FROM crawldb.page WHERE page_type_code!='FRONTIER'")
-        #print(sitesProcessed)
         #if sitesProcessed > 55000:
         #    return None
         
