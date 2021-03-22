@@ -188,7 +188,8 @@ def saveUrlToDB(inputUrl, currPageId):
     #else:
     # preveri če je link na *.gov.si, drugace se ga ne uposteva
     domena = urlparse(inputUrl).netloc
-    if re.match(r'.*([\.]gov.si(^$|[\/])).*', domena) and ('facebook.com' not in inputUrl or 'twitter.com' not in inputUrl or 'linkedin.com' not in inputUrl):
+    #if re.match(r'.*([\.]gov.si(^$|[\/])).*', domena):
+    if re.match(r'.*((^|[\.])gov.si)', domena):
         parsed_url = urlCanonization(inputUrl)  # URL CANONIZATION
         try:
             #newPageId = databaseGetConn("INSERT INTO crawldb.page (page_type_code, url) VALUES ('FRONTIER', %s) RETURNING id", (parsed_url,))
@@ -283,6 +284,12 @@ def getNextUrl_old(lock):
 def getNextUrl(lock):
     # pridobi naslednji URL
     with lock:
+        
+        #sitesProcessed = databaseGetConn("SELECT COUNT(*) FROM crawldb.page WHERE page_type_code!='FRONTIER'")
+        #print(sitesProcessed)
+        #if sitesProcessed > 55000:
+        #    return None
+        
         sitesLocked = databaseGetConn("SELECT url FROM crawldb.page WHERE page_type_code='PROCESSING'")
         stringUrls = ""
         for siteUrl in sitesLocked:
