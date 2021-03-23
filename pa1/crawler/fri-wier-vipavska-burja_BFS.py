@@ -10,7 +10,7 @@ HOST = os.environ.get("HOST")
 DBUSER = os.environ.get("DBUSER")
 DBPASSWD = os.environ.get("DBPASSWD")
 
-from multiprocessing import Process, Value, Lock
+from multiprocessing import Process, Value, Lock, Manager
 import multiprocessing
 
 import re
@@ -34,8 +34,8 @@ import hashlib
 TIMEOUT = 5
 USERAGENT = 'fri-wier-vipavska-burja'
 RENDERTIMEOUT = 5
-dictIpTime = dict()
-delayRobots = dict()
+#dictIpTime = dict()
+#delayRobots = dict()
 
 
 # 'http://83.212.82.40/testJsHref/' -> for testing onclick href
@@ -107,16 +107,11 @@ def checkRootSite(domain):
     data = databaseGetConn("SELECT * FROM crawldb.site WHERE domain='" + domain + "'")
     return data
 
-def fetchPageContent(domain, webAddress, driver, delayRobots):
+def fetchPageContent(domain, webAddress, driver, delayRobots, dictIpTime):
     del driver.requests  # pobrisi requeste za nazaj, ker nas zanimajo samo trenutni!
-    global dictIpTime
     
-    #print(f"Retrieving content for web page URL '{webAddress}'")
-    
-    #razlikaCasa = (time.time() - start_time)
-    #if razlikaCasa < TIMEOUT:  # in če je isti IP !! -> drugače ni treba timeouta
-    #    print("TIMEOUT")
-    #    time.sleep(TIMEOUT - razlikaCasa)
+    print("delayRobots",delayRobots)
+    print("dictIpTime",dictIpTime)
     
     try:
         naslovIP = socket.gethostbyname(domain)
@@ -125,11 +120,12 @@ def fetchPageContent(domain, webAddress, driver, delayRobots):
         return None, 417, None
     
     if(delayRobots.get(naslovIP) is not None):
-        delayTime = delayRobots.get(naslovIP)
+        delayTime = delayRobots[naslovIP]
     else:
         delayTime = TIMEOUT
     
     timeStampIzDict = dictIpTime.get(naslovIP)
+
     if timeStampIzDict is None:
         timeStampIzDict = time.time()
     elif (time.time() - timeStampIzDict) < delayTime:
@@ -140,7 +136,7 @@ def fetchPageContent(domain, webAddress, driver, delayRobots):
     except:
         return None, 417, None
     
-    dictIpTime = {naslovIP: time.time()}
+    dictIpTime[naslovIP] = time.time()
     #print(dictIpTime)
     
     # Timeout needed for Web page to render
@@ -274,31 +270,13 @@ def saveImageFromUrl(url, pageId, timestamp):
             # catch errors (SSL)
             pass
 
-def getNextUrl_old(lock):
+def getNextUrl(lock,firstSleep=0):
     # pridobi naslednji URL
     with lock:
+        time.sleep(firstSleep)
         url = databaseGetConn("SELECT id,url FROM crawldb.page WHERE page_type_code='FRONTIER' ORDER BY id LIMIT 1 ")
         if not url:
             return None
-        return url[0]
-#_old
-def getNextUrl(lock):
-    # pridobi naslednji URL
-    with lock:
-        
-        sitesProcessed = databaseGetConn("SELECT COUNT(*) FROM crawldb.page WHERE page_type_code!='FRONTIER'")
-        if sitesProcessed[0][0] > 55500:
-            return None
-        
-        sitesLocked = databaseGetConn("SELECT url FROM crawldb.page WHERE page_type_code='PROCESSING'")
-        stringUrls = ""
-        for siteUrl in sitesLocked:
-            stringUrls += " AND url NOT LIKE \'%%"+urlparse(siteUrl[0]).netloc+"%%\'"
-            
-        url = databaseGetConn("SELECT id,url FROM crawldb.page WHERE page_type_code='FRONTIER'"+stringUrls+" ORDER BY id LIMIT 1")
-        if not url:
-            return None
-        # lock this url in frontier
         databasePutConn("UPDATE crawldb.page SET page_type_code='PROCESSING' WHERE id=%s AND urL=%s", (url[0][0], url[0][1]))
         return url[0]
 
@@ -330,12 +308,15 @@ def robotsValidate(content):
     return False
 
 # delovna funkcija -> ki predstavlja en proces
-def process(nextUrl, lock, delayRobots):
+def process(nextUrl, lock, delayRobots, dictIpTime,sleepStart):
+    sleepStart['firstSleep'] = sleepStart['firstSleep']+TIMEOUT
+    firstSleep = sleepStart['firstSleep']
     initDataTypes()
     urlId = None
     while urlId is None:
         time.sleep(2)
-        urlId = getNextUrl(lock)  # take first url from frontier (DB)
+        
+        urlId = getNextUrl(lock,firstSleep)  # take first url from frontier (DB)
     
     while urlId is not None:  # MAIN LOOP
         nextUrl = urlId[1]
@@ -349,14 +330,14 @@ def process(nextUrl, lock, delayRobots):
             domain = domain.replace('www.','')
         if not checkRootSite(domain):  # site unknown (domain not in sites)
             robotsUrl = urljoin(parsedUrl.scheme+'://'+domain, 'robots.txt') # generate robots path
-            robotContent, httpCode, contType = fetchPageContent(domain, robotsUrl, driver, delayRobots)
+            robotContent, httpCode, contType = fetchPageContent(domain, robotsUrl, driver, delayRobots, dictIpTime)
             
             if httpCode < 400 and robotsValidate(robotContent):
                 robotContent = driver.find_elements_by_tag_name("body")[0].text  # robots.txt -> get only text, without html tags
                 robots = Robots.parse(robotsUrl, robotContent)
                 
                 for sitemap in robots.sitemaps:
-                    sitemapContent, httpCode, contType = fetchPageContent(domain, sitemap, driver, delayRobots)
+                    sitemapContent, httpCode, contType = fetchPageContent(domain, sitemap, driver, delayRobots, dictIpTime)
                 
                 if robots.sitemaps: # robots & sitemap present
                     databasePutConn("INSERT INTO crawldb.site (domain, robots_content, sitemap_content) VALUES (%s,%s,%s)", (domain, robotContent, sitemapContent))
@@ -364,9 +345,9 @@ def process(nextUrl, lock, delayRobots):
                     databasePutConn("INSERT INTO crawldb.site (domain, robots_content) VALUES (%s,%s)", (domain, robotContent))
                 
                 if robots.agent('*').delay:  # robots & delay present
-                    delayRobots = {socket.gethostbyname(domain): robots.agent('*').delay}
+                    delayRobots[socket.gethostbyname(domain)] = robots.agent('*').delay
                 if robots.agent(USERAGENT).delay:  # robots & delay present
-                    delayRobots = {socket.gethostbyname(domain): robots.agent(USERAGENT).delay}
+                    delayRobots[socket.gethostbyname(domain)] = robots.agent(USERAGENT).delay
                 
             else: # no robots
                 databasePutConn("INSERT INTO crawldb.site (domain) VALUES (%s)", (domain,))
@@ -380,6 +361,10 @@ def process(nextUrl, lock, delayRobots):
             robotContent = databaseGetConn("SELECT robots_content FROM crawldb.site WHERE domain=%s", (domain,))[0][0]
             if robotContent is not None:
                 robots = Robots.parse(nextUrl + '/robots.txt', robotContent)
+                if robots.agent('*').delay:  # robots & delay present
+                    delayRobots[socket.gethostbyname(domain)] = robots.agent('*').delay
+                if robots.agent(USERAGENT).delay:  # robots & delay present
+                    delayRobots[socket.gethostbyname(domain)] = robots.agent(USERAGENT).delay
             else:
                 robots = None
         
@@ -389,7 +374,7 @@ def process(nextUrl, lock, delayRobots):
             # preveri ali ima stran koncnico ...
             if linkType == 'HTML':
                 # download page content
-                content, httpCode, contentType = fetchPageContent(domain, nextUrl, driver, delayRobots)
+                content, httpCode, contentType = fetchPageContent(domain, nextUrl, driver, delayRobots, dictIpTime)
                 
                 # temp url, kam smo bli preusmerjeni ?
                 if content is None or  httpCode == 417: # prazen content
@@ -434,17 +419,25 @@ def process(nextUrl, lock, delayRobots):
 
 # zagon programa
 def run():
+    #global delayRobots
+    
+    manager = Manager()
+    dictIpTime = manager.dict()
+    delayRobots = manager.dict()
+    sleepStart = manager.dict()
+    sleepStart['firstSleep'] = 0
+    
     PROCESSES = multiprocessing.cpu_count() - 1
     PROCESSES = int(input("Enter number of processes: "))
     print(f"Running with {PROCESSES} processes!")
-    global delayRobots
     
     initCrawler(SEEDARRAY)
     
     start = time.time()
     
+    
     nextUrls = ['']
-    procs = [Process(target=process, args=(nextUrls,lock, delayRobots)) for i in range(PROCESSES)] # ustvarjanje procesov
+    procs = [Process(target=process, args=(nextUrls,lock, delayRobots, dictIpTime,sleepStart)) for i in range(PROCESSES)] # ustvarjanje procesov
     for p in procs: p.start()
     for p in procs: p.join()
     
