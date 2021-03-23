@@ -52,6 +52,7 @@ chrome_options.add_argument("--log-level=3")
 chrome_options.add_argument("--ignore-certificate-errors")
 
 driver = webdriver.Chrome(WEB_DRIVER_LOCATION, options=chrome_options)
+driver.set_page_load_timeout(30)
 
 lock = Lock()
 
@@ -285,9 +286,9 @@ def getNextUrl(lock):
     # pridobi naslednji URL
     with lock:
         
-        #sitesProcessed = databaseGetConn("SELECT COUNT(*) FROM crawldb.page WHERE page_type_code!='FRONTIER'")
-        #if sitesProcessed > 55000:
-        #    return None
+        sitesProcessed = databaseGetConn("SELECT COUNT(*) FROM crawldb.page WHERE page_type_code!='FRONTIER'")
+        if sitesProcessed[0][0] > 55500:
+            return None
         
         sitesLocked = databaseGetConn("SELECT url FROM crawldb.page WHERE page_type_code='PROCESSING'")
         stringUrls = ""
@@ -389,8 +390,9 @@ def process(nextUrl, lock, delayRobots):
             if linkType == 'HTML':
                 # download page content
                 content, httpCode, contentType = fetchPageContent(domain, nextUrl, driver, delayRobots)
+                
                 # temp url, kam smo bli preusmerjeni ?
-                if content is None: # prazen content
+                if content is None or  httpCode == 417: # prazen content
                     databasePutConn("UPDATE crawldb.page SET page_type_code='ERROR', accessed_time=%s WHERE id=%s AND urL=%s", (timestamp, urlId[0], urlId[1]))
                 else:
                     #contentType2 = contentTypeCheck(nextUrl, contentType) #ugotovi kakšen tip je ta content
