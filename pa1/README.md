@@ -1,49 +1,35 @@
-Short description of the project and instructions to install, set up and run the crawler:
+#Short description of the project and instructions to install, set up and run the crawler:
+!!IMPORTANT - as database file is too large for github commit, it can be accessed on this link:
+https://drive.google.com/drive/folders/1062HdYvG427uvF1cgZTS973DzcBEowlS?usp=sharing
 
+This is web crawler for for the first programing assignement for a subject "IEPS".
+It uses selenium wire library to retrieve data and obides the etiquete for web crawlers.
+It supports multiple processes and it runs BFS on a domain level.
 
+This project uses dependency `url-py`, that only runs on `Python` version before `3.8`!
+[url-py lib.](https://github.com/seomoz/url-py)
 
-Obvezna uporaba `python` verzije `3.7` -> ker se uporablja modul `urlcanon`, ki trenutno ne deluje na novejši verziji pythona.
-Na začetku uporabnik z vnosom definira število niti.
+## Instalation of dependencies
 
---------------------------------------------------------------
-## Smernice za programiranje:
-Več niti ne sme delati z isto stranjo!
+Install all dependecies from `requirements.txt`, with command:
+```
+pip install -r requirements.txt
+```
+Move to folder `pa1/crawler/url-py-master`
+Install `url-py` dependecy:
+```
+pip install .
+```
 
-15s na posamezen strežnik! -> na nekem IP, ne na domeni
+## Setting up local env
 
-upoštevaj robots.txt
-sitemap in disalow
+In folder `pa1/crawler/` there is a `.env.example` file.
+This file is a example of `.env` file that specifies where is Chrome Web Driver installed, database host (IP) and database credentials.
+Copy file `.env.example` and rename it to `.env`. Then change variables inside, for your local enviroment.
 
-pajek prenese samo HTML vsebino! -> lista tudi ostali content
+## Running crawler
 
-lahko se uporabi knjižnjice za branje robots.txt, prodobivanje spletnih strani, razčlenjevanju spletnih...
-
-ne sme se uporabljati knjižnjice ki ima implementirane funkcionalnosti pajka!
-
-javascript -> lahko se uporabi knjižnjica selenium
-
---------------------------------------------------------------
-
-začetne strani so v tabeli page, damo da so tipa frontier
-
-izvaja se v rangu 3-4 dni da rata 50k strani
-
-eni so delali tako da so naredili skupno bazo, in so vsak pri sebi pognali pajka
-
-ne rabimo oddat tabel image in page data
-
-sheme lahko razširjamo, osbtoječe sheme pa ne spreminjamo iz brišemo
-
---------------------------------------------------------------
-
-upošteval bo commite, ki so do roka
-
-če je baza prevelika lahko damo link (načeloma naj ne bi bila)
-
-lahko programiramo v kirem jeziku in okolju želimo, baza pa naj bo taka kot je definirana
-
-če je stran .ppt .doc .pdf lahko uznačemo kot  page data
-
-lahko gledamo končnice, če pa končnice ni lahko pogledamo v head kakšen je data type
-
-vaje v naprej bojo konzultacijske razen primera, če kdo na slack napiše da bi rad kakšno razlago
+If all dependencies are sucessfuly installed, then you can run crawler, which is located in folder `pa1/crawler/`.
+There are 2 crawlers implemented:
+-> `fri-wier-vipavska-burja.py` This crawler was used for building of database.
+-> `fri-wier-vipavska-burja_BFS.py` This crawler has correctly implemented breadth-first search.
