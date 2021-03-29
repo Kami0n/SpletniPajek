@@ -33,5 +33,5 @@ Copy file `.env.example` and rename it to `.env`. Then change variables inside, 
 
 If all dependencies are sucessfuly installed, then you can run crawler, which is located in folder `pa1/crawler/`.
 There are 2 crawlers implemented:
--> `fri-wier-vipavska-burja.py` This crawler was used for building of database.
--> `fri-wier-vipavska-burja_BFS.py` This crawler has correctly implemented breadth-first search.
+- `fri-wier-vipavska-burja.py` This crawler was used for building of database.
+- `fri-wier-vipavska-burja_BFS.py` This crawler has correctly implemented breadth-first search.
