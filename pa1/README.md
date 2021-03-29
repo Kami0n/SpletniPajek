@@ -1,4 +1,4 @@
-###Short description of the project and instructions to install, set up and run the crawler:
+# Short description of the project and instructions to install, set up and run the crawler:
 
 **!!IMPORTANT - as database file is too large for github commit, it can be accessed on this link:**
 https://drive.google.com/drive/folders/1062HdYvG427uvF1cgZTS973DzcBEowlS?usp=sharing
