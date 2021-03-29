@@ -31,7 +31,16 @@ Copy file `.env.example` and rename it to `.env`. Then change variables inside, 
 
 ## Running crawler
 
-If all dependencies are sucessfuly installed, then you can run crawler, which is located in folder `pa1/crawler/`.
+If all dependencies are sucessfuly installed and you are using `Python` version before `3.8` (crawler was tested and running on `Python 3.7.9`), then you can run crawler, which is located in folder `pa1/crawler/`.
 There are 2 crawlers implemented:
 - `fri-wier-vipavska-burja.py` This crawler was used for building of database.
 - `fri-wier-vipavska-burja_BFS.py` This crawler has correctly implemented breadth-first search.
+
+Command to run crawler:
+```
+python3 fri-wier-vipavska-burja.py
+```
+or
+```
+python3 fri-wier-vipavska-burja_BFS.py
+```
