@@ -1,15 +1,17 @@
-#Short description of the project and instructions to install, set up and run the crawler:
-!!IMPORTANT - as database file is too large for github commit, it can be accessed on this link:
+###Short description of the project and instructions to install, set up and run the crawler:
+
+**!!IMPORTANT - as database file is too large for github commit, it can be accessed on this link:**
 https://drive.google.com/drive/folders/1062HdYvG427uvF1cgZTS973DzcBEowlS?usp=sharing
 
-This is web crawler for for the first programing assignement for a subject "IEPS".
+
+This is a web crawler for for the first programing assignement for a subject "IEPS".
 It uses selenium wire library to retrieve data and obides the etiquete for web crawlers.
 It supports multiple processes and it runs BFS on a domain level.
 
 This project uses dependency `url-py`, that only runs on `Python` version before `3.8`!
 [url-py lib.](https://github.com/seomoz/url-py)
 
-## Instalation of dependencies
+## Installation of dependencies
 
 Install all dependecies from `requirements.txt`, with command:
 ```
