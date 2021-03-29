@@ -9,6 +9,7 @@ It uses selenium wire library to retrieve data and obides the etiquete for web c
 It supports multiple processes and it runs BFS on a domain level.
 
 This project uses dependency `url-py`, that only runs on `Python` version before `3.8`!
+
 [url-py lib.](https://github.com/seomoz/url-py)
 
 ## Installation of dependencies
@@ -44,3 +45,5 @@ or
 ```
 python3 fri-wier-vipavska-burja_BFS.py
 ```
+
+At startup crawler asks user to input a number of processes (workers).
