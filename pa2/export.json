@@ -654,5 +654,173 @@
                 "content": "Carved of rich black onyx, this\nelephant pendant has 14-karat yellow gold applied to mark the feet, tusk,\ntail, and blanket. A 2-mm round faceted ruby in a gold bezel setting forms\nthe eye. The pendant hangs from an 18-inch chain."
             }
         ]
+    },
+    "avto.net": {
+        "Justy": [
+            {
+                "title": "Subaru Justy ",
+                "firstRegist": "1993",
+                "kilometers": "160000 km",
+                "fuel": "bencinski motor",
+                "transmission": "ročni menjalnik",
+                "engine": "\n        40 kW / 54 KM\n      ",
+                "price": "450 €"
+            },
+            {
+                "title": "Subaru Justy ECVT 4WD Avt.",
+                "firstRegist": "1995",
+                "kilometers": "96100 km",
+                "fuel": "bencinski motor",
+                "transmission": "ročni menjalnik",
+                "engine": "\n        1189 ccm, 55 kW / 75 KM\n      ",
+                "price": "530 €"
+            },
+            {
+                "title": "Subaru Justy GLi J10",
+                "firstRegist": "1991",
+                "kilometers": "81020 km",
+                "fuel": "bencinski motor",
+                "transmission": "ročni menjalnik",
+                "engine": "\n        997 ccm, 40 kW / 54 KM\n      ",
+                "price": "850 €"
+            },
+            {
+                "title": "Subaru Justy J10 4x4",
+                "firstRegist": "1987",
+                "kilometers": "51000 km",
+                "fuel": "bencinski motor",
+                "transmission": "ročni menjalnik",
+                "engine": "\n        40 kW / 54 KM\n      ",
+                "price": "1.500 €"
+            }
+        ],
+        "Legacy": [
+            {
+                "title": "Subaru Legacy Station 2.0 GL 4WD",
+                "firstRegist": "1997",
+                "kilometers": "362000 km",
+                "fuel": "bencinski motor",
+                "transmission": "ročni menjalnik",
+                "engine": "\n        1994 ccm, 85 kW / 116 KM\n      ",
+                "price": "400 €"
+            },
+            {
+                "title": "Subaru Legacy Station Wagon  2.0 GL JA 4WD",
+                "firstRegist": "2000",
+                "kilometers": "380000 km",
+                "fuel": "bencinski motor",
+                "transmission": "ročni menjalnik",
+                "engine": "\n        1994 ccm, 92 kW / 125 KM\n      ",
+                "price": "750 €"
+            },
+            {
+                "title": "Subaru Legacy Station 2.0 GL 4WD PLIN",
+                "firstRegist": "1996",
+                "kilometers": "270000 km",
+                "fuel": "bencinski motor",
+                "transmission": "ročni menjalnik",
+                "engine": "\n        1994 ccm, 85 kW / 116 KM\n      ",
+                "price": "1.400 €"
+            },
+            {
+                "title": "Subaru Legacy Station Wagon 2.0 PZ 4WD",
+                "firstRegist": "2002",
+                "kilometers": "185060 km",
+                "fuel": "bencinski motor",
+                "transmission": "ročni menjalnik",
+                "engine": "\n        1994 ccm, 92 kW / 125 KM\n      ",
+                "price": "1.450 €"
+            },
+            {
+                "title": "Subaru Legacy Wagon 2.5 YW 4WD PLIN Outback ",
+                "firstRegist": "2003",
+                "kilometers": "193000 km",
+                "fuel": "bencinski motor",
+                "transmission": "ročni menjalnik",
+                "engine": "\n        2457 ccm, 115 kW / 156 KM\n      ",
+                "price": "3.200 €"
+            },
+            {
+                "title": "Subaru Legacy ",
+                "firstRegist": "2008",
+                "kilometers": "301510 km",
+                "fuel": "bencinski motor",
+                "transmission": "avtomatski menjalnik",
+                "engine": "\n        1994 ccm, 110 kW / 150 KM\n      ",
+                "price": "3.700 €"
+            },
+            {
+                "title": "Subaru Legacy Station Wagon 2.0 FC 4WD",
+                "firstRegist": "2007",
+                "kilometers": "220000 km",
+                "fuel": "bencinski motor",
+                "transmission": "ročni menjalnik",
+                "engine": "\n        1994 ccm, 121 kW / 165 KM\n      ",
+                "price": "3.990 €"
+            },
+            {
+                "title": "Subaru Legacy ",
+                "firstRegist": "2008",
+                "kilometers": "235000 km",
+                "fuel": "diesel motor",
+                "transmission": "ročni menjalnik",
+                "engine": "\n        2000 ccm, 110 kW / 150 KM\n      ",
+                "price": "4.780 €"
+            },
+            {
+                "title": "Subaru Legacy Station Wagon 4WD 2.0D AB Comfort",
+                "firstRegist": "2010",
+                "kilometers": "209000 km",
+                "fuel": "diesel motor",
+                "transmission": "ročni menjalnik",
+                "engine": "\n        1998 ccm, 110 kW / 150 KM\n      ",
+                "price": "4.990 €"
+            },
+            {
+                "title": "Subaru Legacy Station Wagon 2.0D AQ 4WD-SAMO 104.000km-GARANCIJA",
+                "firstRegist": "2009",
+                "kilometers": "104000 km",
+                "fuel": "diesel motor",
+                "transmission": "ročni menjalnik",
+                "engine": "\n        1998 ccm, 110 kW / 150 KM\n      ",
+                "price": "5.990 €"
+            },
+            {
+                "title": "Subaru Legacy Station Wagon 4WD 2.0D VA Trend",
+                "firstRegist": "2010",
+                "kilometers": "290000 km",
+                "fuel": "diesel motor",
+                "transmission": "ročni menjalnik",
+                "engine": "\n        1998 ccm, 110 kW / 150 KM\n      ",
+                "price": "6.250 €"
+            },
+            {
+                "title": "Subaru Legacy Station Wagon 4WD 2.0D VC Dynamic Sport",
+                "firstRegist": "2011",
+                "kilometers": "206582 km",
+                "fuel": "diesel motor",
+                "transmission": "ročni menjalnik",
+                "engine": "\n        1998 ccm, 110 kW / 150 KM\n      ",
+                "price": "6.350 €"
+            },
+            {
+                "title": "Subaru Legacy Station Wagon 2.0D AQ 4WD-4x4-TOP AVTO",
+                "firstRegist": "2008",
+                "kilometers": "177000 km",
+                "fuel": "diesel motor",
+                "transmission": "ročni menjalnik",
+                "engine": "\n        1998 ccm, 110 kW / 150 KM\n      ",
+                "price": "6.785 €"
+            },
+            {
+                "title": "Subaru Legacy Station Wagon 4WD 2.0D AB Comfort 1LETO JAMSTVA",
+                "firstRegist": "2012",
+                "kilometers": "200000 km",
+                "fuel": "diesel motor",
+                "transmission": "ročni menjalnik",
+                "engine": "\n        1998 ccm, 110 kW / 150 KM\n      ",
+                "price": "6.850 €"
+            }
+        ]
     }
 }

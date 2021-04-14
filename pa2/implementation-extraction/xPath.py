@@ -154,17 +154,48 @@ def extractOverstock(jsonObj):
         jsonObj[url][name] = tmpItems
 
 def extractOwnPages(jsonObj):
-    url = ''
-    overstockArray = {}
-    overstockArray[''] = htmlFileRead(inputFolderStruct+url+"/.html", 'mbcs')
-    overstockArray[''] = htmlFileRead(inputFolderStruct+url+"/.html", 'mbcs')
+    url = 'avto.net'
+    avtoArray = {}
+    avtoArray['Justy'] = htmlFileRead(inputFolderStruct+url+"/Justy.html", 'windows-1250')
+    avtoArray['Legacy'] = htmlFileRead(inputFolderStruct+url+"/Legacy.html", 'windows-1250')
     
     jsonObj[url] = {}
     
-    for name,page in overstockArray.items():
+    for name,page in avtoArray.items():
+        tree = html.fromstring(page)
+        #extract title
+        titles = tree.xpath('/html/body/strong/div[1]/div[3]/div/div[5]/form/div/div[1]/span')
+        # extract year 1 registration
+        firstRegist = tree.xpath('/html/body/strong/div[1]/div[3]/div/div[5]/form/div/div[4]/div/table/tbody/tr[1]/td[2]')
+        # extract mileage
+        kilometers = tree.xpath('/html/body/strong/div[1]/div[3]/div/div[5]/form/div/div[4]/div/table/tbody/tr[2]/td[2]')
+        # extract fuel
+        fuel = tree.xpath('/html/body/strong/div[1]/div[3]/div/div[5]/form/div/div[4]/div/table/tbody/tr[3]/td[2]')
+        # extract transmission
+        transmission = tree.xpath('/html/body/strong/div[1]/div[3]/div/div[5]/form/div/div[4]/div/table/tbody/tr[4]/td[2]')
+        # extract engine
+        engine = tree.xpath('/html/body/strong/div[1]/div[3]/div/div[5]/form/div/div[4]/div/table/tbody/tr[5]/td[2]')
+        # extract price
+        price = tree.xpath('/html/body/strong/div[1]/div[3]/div/div[5]/form/div/div[contains(@class, "GO-Results-PriceLogo")]/div[1]/div[1]/div')
+        
+        index = 0
+        
         tmpItems = []
         
-        
+        for title in titles:
+            tmpArrayItem = {}
+            
+            tmpArrayItem['title'] = title.text
+            tmpArrayItem['firstRegist'] = firstRegist[index].text
+            tmpArrayItem['kilometers'] = kilometers[index].text
+            tmpArrayItem['fuel'] = fuel[index].text
+            tmpArrayItem['transmission'] = transmission[index].text
+            tmpArrayItem['engine'] = engine[index].text
+            tmpArrayItem['price'] = price[index].text
+            
+            tmpItems.append(tmpArrayItem)
+            
+            index += 1
         
         jsonObj[url][name] = tmpItems
 
@@ -180,7 +211,7 @@ def main():
     jsonObj = {}
     extractRTV(jsonObj)
     extractOverstock(jsonObj)
-    #extractOwnPages(jsonObj)
+    extractOwnPages(jsonObj)
     
     exportJson(jsonObj)
 
