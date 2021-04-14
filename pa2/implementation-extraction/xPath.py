@@ -1,7 +1,4 @@
 
-import os 
-dir_path = os.path.dirname(os.path.realpath(__file__))
-
 # For each given web page type implement a separate function that will take HTML code as input.
 # The method should output extracted data in a JSON structured format to a standard output.
 # Each data item must be directly extracted using an XPath expression.
@@ -52,60 +49,6 @@ def extractRTV(jsonObj):
         # extract content
         content = tree.xpath('/html/body/div[@id="main-container"]/div[3]/div/div[2]/descendant::*/text()[not(ancestor::script)]') # - minus scripts
         tmpJson['content'] = content
-        
-        jsonObj[url][name] = tmpJson
-
-def extractOverstockOld(jsonObj):
-    url = 'overstock.com'
-    overstockArray = {}
-    overstockArray['jewelry01'] = htmlFileRead(inputFolderStruct+url+"/jewelry01.html", 'mbcs')
-    overstockArray['jewelry02'] = htmlFileRead(inputFolderStruct+url+"/jewelry02.html", 'mbcs')
-    
-    jsonObj[url] = {}
-    
-    for name,page in overstockArray.items():
-        tree = html.fromstring(page)
-        tmpJson = {}
-        
-        #extract title
-        titles = tree.xpath('/html/body/table[2]/tbody/tr[1]/td[5]/table/tbody/tr[2]/td/table/tbody/tr/td/table/tbody/tr/td/a/b')
-        tmpTitleObj = []
-        for title in titles:
-            tmpTitleObj.append(title.text)
-        tmpJson['title'] = tmpTitleObj
-        
-        # extract list price
-        listPrices = tree.xpath('/html/body/table[2]/tbody/tr[1]/td[5]/table/tbody/tr[2]/td/table/tbody/tr/td/table/tbody/tr/td/table/tbody/tr/td[1]/table/tbody/tr[1]/td[2]/s')
-        tmpListPriceObj = []
-        for price in listPrices:
-            tmpListPriceObj.append(price.text)
-        tmpJson['listPrice'] = tmpListPriceObj
-        
-        # extract price
-        prices = tree.xpath('/html/body/table[2]/tbody/tr[1]/td[5]/table/tbody/tr[2]/td/table/tbody/tr/td/table/tbody/tr/td/table/tbody/tr/td[1]/table/tbody/tr[1]/td[2]/s')
-        tmpPriceObj = []
-        for price in prices:
-            tmpPriceObj.append(price.text)
-        tmpJson['price'] = tmpPriceObj
-        
-        # extract saving & saving percent
-        savings = tree.xpath('/html/body/table[2]/tbody/tr[1]/td[5]/table/tbody/tr[2]/td/table/tbody/tr/td/table/tbody/tr/td/table/tbody/tr/td[1]/table/tbody/tr[3]/td[2]/span')
-        tmpSavingsObj = []
-        tmpSavingspercentObj = []
-        for save in savings:
-            saving = save.text
-            tmpSavingsObj.append(saving.split(" ")[0])
-            tmpSavingspercentObj.append(saving.split(" ")[1])
-        tmpJson['saving'] = tmpSavingsObj
-        tmpJson['savingPercent'] = tmpSavingspercentObj
-        
-        # extract content
-        savings = tree.xpath('/html/body/table[2]/tbody/tr[1]/td[5]/table/tbody/tr[2]/td/table/tbody/tr/td/table/tbody/tr/td/table/tbody/tr/td[2]/span')
-        tmpSavingsObj = []
-        for save in savings:
-            tmpSavingsObj.append(save.text)
-        tmpJson['content'] = tmpSavingsObj
-        
         
         jsonObj[url][name] = tmpJson
 
@@ -201,7 +144,7 @@ def extractOwnPages(jsonObj):
 
 def exportJson(jsonObj):
     jsonText = json.dumps(jsonObj, ensure_ascii=False).encode('utf8') # ensure_ascii=False -> da zapisuje tudi čšž
-    f = open(outputFolderStruct+"export.json", "wb")
+    f = open(outputFolderStruct+"xPathExport.json", "wb")
     f.write(jsonText)
     
     #print(jsonText) # The method should output extracted data in a JSON structured format to a standard output.
@@ -209,8 +152,8 @@ def exportJson(jsonObj):
 def main():
     
     jsonObj = {}
-    extractRTV(jsonObj)
     extractOverstock(jsonObj)
+    extractRTV(jsonObj)
     extractOwnPages(jsonObj)
     
     exportJson(jsonObj)
