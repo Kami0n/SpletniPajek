@@ -7,8 +7,8 @@
 import json
 import re
 
-inputFolderStruct = "./input-extraction/"
-outputFolderStruct = "./"
+inputFolderStruct = "../input-extraction/"
+outputFolderStruct = "../"
 
 def htmlFileRead(filePath, enc='utf-8'):
     f = open(filePath, "r", encoding=enc)
@@ -47,11 +47,12 @@ def extractRTV(jsonObj):
         
         # extract content
         content = re.findall(r"((?:<article(.|\s))* (?:<p[^>]*>\s*((?:.|\n)*?)<\/p>))",page) # - minus scripts
+        #(?:(?:<article[^>]+?>((.|\s)+?))(?:<p[^>]+>((?:\s|.|\n)*?)<\/p>)+ )
         tmpJson['content'] = content
         print(content)
         
         jsonObj[url][name] = tmpJson
-"""
+
 def extractOverstock(jsonObj):
     url = 'overstock.com'
     overstockArray = {}
@@ -61,17 +62,17 @@ def extractOverstock(jsonObj):
     jsonObj[url] = {}
     
     for name,page in overstockArray.items():
-        tree = html.fromstring(page)
+        
         #extract title
-        titles = tree.xpath('/html/body/table[2]/tbody/tr[1]/td[5]/table/tbody/tr[2]/td/table/tbody/tr/td/table/tbody/tr/td/a/b')
+        titles = re.findall(r"<div class=\"author-name\">([^<]*)</div>",page)
         # extract list price
-        listPrices = tree.xpath('/html/body/table[2]/tbody/tr[1]/td[5]/table/tbody/tr[2]/td/table/tbody/tr/td/table/tbody/tr/td/table/tbody/tr/td[1]/table/tbody/tr[1]/td[2]/s')
+        listPrices = re.findall(r"<div class=\"author-name\">([^<]*)</div>",page)
         # extract price
-        prices = tree.xpath('/html/body/table[2]/tbody/tr[1]/td[5]/table/tbody/tr[2]/td/table/tbody/tr/td/table/tbody/tr/td/table/tbody/tr/td[1]/table/tbody/tr[1]/td[2]/s')
+        prices = re.findall(r"<div class=\"author-name\">([^<]*)</div>",page)
         # extract saving & saving percent
-        savings = tree.xpath('/html/body/table[2]/tbody/tr[1]/td[5]/table/tbody/tr[2]/td/table/tbody/tr/td/table/tbody/tr/td/table/tbody/tr/td[1]/table/tbody/tr[3]/td[2]/span')
+        savings = re.findall(r"<div class=\"author-name\">([^<]*)</div>",page)
         # extract content
-        content = tree.xpath('/html/body/table[2]/tbody/tr[1]/td[5]/table/tbody/tr[2]/td/table/tbody/tr/td/table/tbody/tr/td/table/tbody/tr/td[2]/span')
+        content = re.findall(r"<div class=\"author-name\">([^<]*)</div>",page)
         
         index = 0
         
@@ -95,7 +96,7 @@ def extractOverstock(jsonObj):
             index += 1
         
         jsonObj[url][name] = tmpItems
-
+"""
 def extractOwnPages(jsonObj):
     url = 'avto.net'
     avtoArray = {}
@@ -142,21 +143,22 @@ def extractOwnPages(jsonObj):
         
         jsonObj[url][name] = tmpItems
 """
-def exportJson(jsonObj):
-    jsonText = json.dumps(jsonObj, ensure_ascii=False).encode('utf8') # ensure_ascii=False -> da zapisuje tudi čšž
+def exportJson(jsonText):
     f = open(outputFolderStruct+"reExport.json", "wb")
-    f.write(jsonText)
-    
-    #print(jsonText) # The method should output extracted data in a JSON structured format to a standard output.
+    f.write(jsonText.encode('utf8'))
 
-def main():
+def main(printing):
     
     jsonObj = {}
-    #extractOverstock(jsonObj)
-    extractRTV(jsonObj)
+    extractOverstock(jsonObj)
+    #extractRTV(jsonObj)
     #extractOwnPages(jsonObj)
     
-    exportJson(jsonObj)
+    jsonText = json.dumps(jsonObj, ensure_ascii=False) # ensure_ascii=False -> da zapisuje tudi čšž
+    if(printing):
+        print(jsonText) # The method should output extracted data in a JSON structured format to a standard output.
+    else:
+        exportJson(jsonText)
 
 if __name__ == "__main__":
-    main()
+    main(False)

@@ -7,8 +7,8 @@
 import json
 from lxml import html
 
-inputFolderStruct = "./input-extraction/"
-outputFolderStruct = "./"
+inputFolderStruct = "../input-extraction/"
+outputFolderStruct = "../"
 
 def htmlFileRead(filePath, enc='utf-8'):
     f = open(filePath, "r", encoding=enc)
@@ -142,21 +142,22 @@ def extractOwnPages(jsonObj):
         
         jsonObj[url][name] = tmpItems
 
-def exportJson(jsonObj):
-    jsonText = json.dumps(jsonObj, ensure_ascii=False).encode('utf8') # ensure_ascii=False -> da zapisuje tudi čšž
+def exportJson(jsonText):
     f = open(outputFolderStruct+"xPathExport.json", "wb")
-    f.write(jsonText)
-    
-    #print(jsonText) # The method should output extracted data in a JSON structured format to a standard output.
+    f.write(jsonText.encode('utf8'))
 
-def main():
+def main(printing):
     
     jsonObj = {}
     extractOverstock(jsonObj)
     extractRTV(jsonObj)
     extractOwnPages(jsonObj)
     
-    exportJson(jsonObj)
+    jsonText = json.dumps(jsonObj, ensure_ascii=False) # ensure_ascii=False -> da zapisuje tudi čšž
+    if(printing):
+        print(jsonText) # The method should output extracted data in a JSON structured format to a standard output.
+    else:
+        exportJson(jsonText)
 
 if __name__ == "__main__":
-    main()
+    main(False)
