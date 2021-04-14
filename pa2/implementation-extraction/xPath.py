@@ -153,6 +153,21 @@ def extractOverstock(jsonObj):
         
         jsonObj[url][name] = tmpItems
 
+def extractOwnPages(jsonObj):
+    url = ''
+    overstockArray = {}
+    overstockArray[''] = htmlFileRead(inputFolderStruct+url+"/.html", 'mbcs')
+    overstockArray[''] = htmlFileRead(inputFolderStruct+url+"/.html", 'mbcs')
+    
+    jsonObj[url] = {}
+    
+    for name,page in overstockArray.items():
+        tmpItems = []
+        
+        
+        
+        jsonObj[url][name] = tmpItems
+
 def exportJson(jsonObj):
     jsonText = json.dumps(jsonObj, ensure_ascii=False).encode('utf8') # ensure_ascii=False -> da zapisuje tudi čšž
     f = open(outputFolderStruct+"export.json", "wb")
@@ -165,6 +180,7 @@ def main():
     jsonObj = {}
     extractRTV(jsonObj)
     extractOverstock(jsonObj)
+    #extractOwnPages(jsonObj)
     
     exportJson(jsonObj)
 
