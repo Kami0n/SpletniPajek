@@ -5,6 +5,7 @@
 # If the extracted value should be further processed, use regular expressions or other techniques to normalize them (for text only!).
 
 import json
+import re
 from lxml import html
 
 inputFolderStruct = "../input-extraction/"
@@ -32,7 +33,7 @@ def extractRTV(jsonObj):
         
         # extract publish date/time
         datetime = tree.xpath('string(/html/body/div[@id="main-container"]/div[3]/div/div[1]/div[2])')
-        tmpJson['datetime'] = datetime.replace('\n',' ').replace('\t','') # remove tabs and new lines
+        tmpJson['datetime'] = datetime.replace('\n',' ').replace('\t','').strip() # remove tabs and new lines
         
         # extract title
         title = tree.xpath('string(/html/body/div[@id="main-container"]/div[3]/div/header/h1)')
@@ -134,7 +135,9 @@ def extractOwnPages(jsonObj):
             tmpArrayItem['kilometers'] = kilometers[index].text
             tmpArrayItem['fuel'] = fuel[index].text
             tmpArrayItem['transmission'] = transmission[index].text
-            tmpArrayItem['engine'] = engine[index].text
+            
+            engineTxt = re.sub(' +', ' ', engine[index].text.replace('\n',' '))
+            tmpArrayItem['engine'] = engineTxt.strip()
             tmpArrayItem['price'] = price[index].text
             
             tmpItems.append(tmpArrayItem)
@@ -150,9 +153,9 @@ def exportJson(jsonText):
 def main(printing):
     
     jsonObj = {}
-    #extractOverstock(jsonObj)
+    extractOverstock(jsonObj)
     extractRTV(jsonObj)
-    #extractOwnPages(jsonObj)
+    extractOwnPages(jsonObj)
     
     jsonText = json.dumps(jsonObj, ensure_ascii=False) # ensure_ascii=False -> da zapisuje tudi čšž
     if(printing):
