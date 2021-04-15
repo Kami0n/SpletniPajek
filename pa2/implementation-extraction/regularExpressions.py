@@ -53,9 +53,6 @@ def extractRTV(jsonObj):
         #for string in articleContent:
         #    contentString = contentString + (string.replace('\n',' ').replace('\t','').replace('<br>','\n').strip()) # remove tabs and new lines)
         
-        
-        
-        
         # whole article content:
         # (?simx)(?=<article[^>]+?>(.*?)<\/article>)
         # https://regex101.com/r/dA6LEv/1
@@ -66,8 +63,12 @@ def extractRTV(jsonObj):
         
         # combined -> does not stop at </article>
         # (?simx)(?:<article[^>]*?> (?=.?)|(?=<p[^>]*>\s*(.*?)<\/p>)|(?:.?) <\/article>)
+        # https://regex101.com/r/TI8ZNF/1
         
         articleContent = re.findall(r"(?simx)(?=<article[^>]+?> (?=.)|(?=<p[^>]*>\s*(.*?)<\/p>)|(?=.) <\/article>)", page) 
+        
+        articleContent = '\n'.join(articleContent)
+        articleContent = articleContent.replace('<br>','\n').strip()
         
         tmpJson['content'] = articleContent
         print(tmpJson['content'])
