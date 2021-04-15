@@ -1,11 +1,30 @@
 # README
 
-TEst
+## Installation of dependencies
 
-## naslov2
+Move to folder `pa2/implementation-extraction` and install all dependecies from `requirements.txt`, with command:
+```
+pip install -r requirements.txt
+```
 
+## Running extractor
+
+Move to folder `pa2/implementation-extraction` and run:
+
+For regular expressions implementation:
 ```
-primer kode
+python run-extraction.py A
 ```
+
+For xPath implementation:
+```
+python run-extraction.py B
+```
+
+For road runner implementation:
+```
+python run-extraction.py C
+```
+
 
 
