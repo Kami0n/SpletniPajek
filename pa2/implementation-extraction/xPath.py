@@ -32,7 +32,7 @@ def extractRTV(jsonObj):
         
         # extract publish date/time
         datetime = tree.xpath('string(/html/body/div[@id="main-container"]/div[3]/div/div[1]/div[2])')
-        tmpJson['datetime'] = datetime
+        tmpJson['datetime'] = datetime.replace('\n',' ').replace('\t','') # remove tabs and new lines
         
         # extract title
         title = tree.xpath('string(/html/body/div[@id="main-container"]/div[3]/div/header/h1)')
@@ -47,8 +47,9 @@ def extractRTV(jsonObj):
         tmpJson['lead'] = lead
         
         # extract content
-        content = tree.xpath('/html/body/div[@id="main-container"]/div[3]/div/div[2]/descendant::*/text()[not(ancestor::script)]') # - minus scripts
-        tmpJson['content'] = content
+        content = tree.xpath('/html/body/div[@id="main-container"]/div[3]/div/div[2]/descendant::p/text()[not(ancestor::script)]') # - minus scripts
+        strContent = '\n'.join(content) # list to string with new lines
+        tmpJson['content'] = strContent
         
         jsonObj[url][name] = tmpJson
 
@@ -149,9 +150,9 @@ def exportJson(jsonText):
 def main(printing):
     
     jsonObj = {}
-    extractOverstock(jsonObj)
+    #extractOverstock(jsonObj)
     extractRTV(jsonObj)
-    extractOwnPages(jsonObj)
+    #extractOwnPages(jsonObj)
     
     jsonText = json.dumps(jsonObj, ensure_ascii=False) # ensure_ascii=False -> da zapisuje tudi čšž
     if(printing):
