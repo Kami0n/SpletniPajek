@@ -5,7 +5,7 @@
 # But you can extract multiple data items using one regular expression (this might help you when extracting optional items in list pages).
 
 import json
-import re
+import regex as re
 
 inputFolderStruct = "../input-extraction/"
 outputFolderStruct = "../"
@@ -31,7 +31,7 @@ def extractRTV(jsonObj):
         
         # extract publish date/time
         datetime = re.findall(r"<div class=\"publish-meta\">([^/]*)</div>",page)
-        tmpJson['datetime'] = datetime[0]
+        tmpJson['datetime'] = datetime[0].replace('\n',' ').replace('\t','').replace('<br>','\n').strip() # remove tabs and new lines
         
         # extract title
         title = re.findall(r"<h1>([^<]*)</h1>",page)
@@ -46,10 +46,31 @@ def extractRTV(jsonObj):
         tmpJson['lead'] = lead[0]
         
         # extract content
-        content = re.findall(r"((?:<article(.|\s))* (?:<p[^>]*>\s*((?:.|\n)*?)<\/p>))",page) # - minus scripts
-        #(?:(?:<article[^>]+?>((.|\s)+?))(?:<p[^>]+>((?:\s|.|\n)*?)<\/p>)+ )
-        tmpJson['content'] = content
-        print(content)
+        
+        #article = re.findall(r"(?simx)(?=<article[^>]+?>(.*?)<\/article>)", page)
+        #articleContent = re.findall(r"(?simx)(?=<p[^>]*>\s*(.*?)<\/p>)", article[0]) 
+        #contentString = ''
+        #for string in articleContent:
+        #    contentString = contentString + (string.replace('\n',' ').replace('\t','').replace('<br>','\n').strip()) # remove tabs and new lines)
+        
+        
+        
+        
+        # whole article content:
+        # (?simx)(?=<article[^>]+?>(.*?)<\/article>)
+        # https://regex101.com/r/dA6LEv/1
+        
+        # only p content
+        # (?simx)(?=<p[^>]*>\s*(.*?)<\/p>)
+        # https://regex101.com/r/jKr8eK/1
+        
+        # combined -> does not stop at </article>
+        # (?simx)(?:<article[^>]*?> (?=.?)|(?=<p[^>]*>\s*(.*?)<\/p>)|(?:.?) <\/article>)
+        
+        articleContent = re.findall(r"(?simx)(?=<article[^>]+?> (?=.)|(?=<p[^>]*>\s*(.*?)<\/p>)|(?=.) <\/article>)", page) 
+        
+        tmpJson['content'] = articleContent
+        print(tmpJson['content'])
         
         jsonObj[url][name] = tmpJson
 
@@ -150,8 +171,8 @@ def exportJson(jsonText):
 def main(printing):
     
     jsonObj = {}
-    extractOverstock(jsonObj)
-    #extractRTV(jsonObj)
+    #extractOverstock(jsonObj)
+    extractRTV(jsonObj)
     #extractOwnPages(jsonObj)
     
     jsonText = json.dumps(jsonObj, ensure_ascii=False) # ensure_ascii=False -> da zapisuje tudi čšž
