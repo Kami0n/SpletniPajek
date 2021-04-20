@@ -86,15 +86,15 @@ def extractOverstock(jsonObj):
     for name,page in overstockArray.items():
         
         #extract title
-        titles = re.findall(r"<div class=\"author-name\">([^<]*)</div>",page)
+        titles = re.findall(r"<a href=\"http:\/\/www\.overstock\.com\/cgi-bin\/d2\.cgi\?PAGE=PROFRAME&amp;PROD_ID=[0-9]+\"><b>([^<]*)<\/b><\/a>",page)
         # extract list price
-        listPrices = re.findall(r"<div class=\"author-name\">([^<]*)</div>",page)
+        listPrices = re.findall(r"<td align=\"left\" nowrap=\"nowrap\"><s>([^<]*)",page)
         # extract price
-        prices = re.findall(r"<div class=\"author-name\">([^<]*)</div>",page)
+        prices = re.findall(r"<span class=\"bigred\"><b>([^<]*)",page)
         # extract saving & saving percent
-        savings = re.findall(r"<div class=\"author-name\">([^<]*)</div>",page)
+        savings = re.findall(r"<span class=\"littleorange\">([^<]*)<\/span>",page)
         # extract content
-        content = re.findall(r"<div class=\"author-name\">([^<]*)</div>",page)
+        content = re.findall(r"<span class=\"normal\">([^<]*)<br>",page)
         
         index = 0
         
@@ -102,16 +102,16 @@ def extractOverstock(jsonObj):
         
         for title in titles:
             tmpArrayItem = {}
+
+            tmpArrayItem['title'] = title
+            tmpArrayItem['listPrice'] = listPrices[index]
+            tmpArrayItem['price'] = prices[index]
             
-            tmpArrayItem['title'] = title.text
-            tmpArrayItem['listPrice'] = listPrices[index].text
-            tmpArrayItem['price'] = prices[index].text
-            
-            saving = savings[index].text
+            saving = savings[index]
             tmpArrayItem['saving'] = saving.split(" ")[0]
             tmpArrayItem['savingPercent'] = saving.split(" ")[1]
             
-            tmpArrayItem['content'] = content[index].text
+            tmpArrayItem['content'] = content[index]
             
             tmpItems.append(tmpArrayItem)
             
@@ -172,8 +172,8 @@ def exportJson(jsonText):
 def main(printing):
     
     jsonObj = {}
-    #extractOverstock(jsonObj)
-    extractRTV(jsonObj)
+    extractOverstock(jsonObj)
+    #extractRTV(jsonObj)
     #extractOwnPages(jsonObj)
     
     jsonText = json.dumps(jsonObj, ensure_ascii=False) # ensure_ascii=False -> da zapisuje tudi čšž
