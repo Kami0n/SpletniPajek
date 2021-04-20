@@ -118,7 +118,7 @@ def extractOverstock(jsonObj):
             index += 1
         
         jsonObj[url][name] = tmpItems
-"""
+
 def extractOwnPages(jsonObj):
     url = 'avto.net'
     avtoArray = {}
@@ -128,21 +128,20 @@ def extractOwnPages(jsonObj):
     jsonObj[url] = {}
     
     for name,page in avtoArray.items():
-        tree = html.fromstring(page)
         #extract title
-        titles = tree.xpath('/html/body/strong/div[1]/div[3]/div/div[5]/form/div/div[1]/span')
+        titles = re.findall(r"<div class=\"GO-Results-Naziv bg-dark px-3 py-2 font-weight-bold text-truncate text-white text-decoration-none\">[\n\r\s]+<span>([^<]*)<\/span>",page)
         # extract year 1 registration
-        firstRegist = tree.xpath('/html/body/strong/div[1]/div[3]/div/div[5]/form/div/div[4]/div/table/tbody/tr[1]/td[2]')
+        firstRegist = re.findall(r"<td class=\"w-75 pl-3\">([^<]*)<\/td>",page)
         # extract mileage
-        kilometers = tree.xpath('/html/body/strong/div[1]/div[3]/div/div[5]/form/div/div[4]/div/table/tbody/tr[2]/td[2]')
+        kilometers = re.findall(r"<td class=\"d-none d-md-block pl-3\">Prevoženih<\/td>[\n\r\s]+<td class=\"pl-3\">([^<]*)<\/td>",page)
         # extract fuel
-        fuel = tree.xpath('/html/body/strong/div[1]/div[3]/div/div[5]/form/div/div[4]/div/table/tbody/tr[3]/td[2]')
+        fuel = re.findall(r"<td class=\"d-none d-md-block pl-3\">Gorivo<\/td>[\n\r\s]+<td class=\"pl-3\">([^<]*)<\/td>",page)
         # extract transmission
-        transmission = tree.xpath('/html/body/strong/div[1]/div[3]/div/div[5]/form/div/div[4]/div/table/tbody/tr[4]/td[2]')
+        transmission = re.findall(r"<td class=\"d-none d-md-block pl-3\">Menjalnik<\/td>[\n\r\s]+<td class=\"pl-3 text-truncate\">([^<]*)",page)
         # extract engine
-        engine = tree.xpath('/html/body/strong/div[1]/div[3]/div/div[5]/form/div/div[4]/div/table/tbody/tr[5]/td[2]')
+        engine = re.findall(r"<td class=\"d-none d-md-block pl-3\">Motor<\/td>[\n\r\s]+<td class=\"pl-3 text-truncate\">([^<]*)",page)
         # extract price
-        price = tree.xpath('/html/body/strong/div[1]/div[3]/div/div[5]/form/div/div[contains(@class, "GO-Results-PriceLogo")]/div[1]/div[1]/div')
+        price = re.findall(r"<div class=\"d-none d-sm-block col-auto px-sm-0 pb-sm-3 GO-Results-PriceLogo\">[\n\r\s]+<!--(?:.*?)-->[\n\r\s]+<!--(?:.*?)-->[\n\r\s]+<div class=\"GO-Results-Price mt-0 mt-sm-3\">[\n\r\s]+<!--(?:.*?)-->[\n\r\s]+<!--(?:.*?)-->[\n\r\s]+<!--(?:.*?)-->[\n\r\s]+<div class=\"GO-Results-Price-Mid\">[\n\r\s]+<div class=\"GO-Results-Price-TXT-Regular\">([^<]*)<\/div>",page)
         
         index = 0
         
@@ -151,20 +150,20 @@ def extractOwnPages(jsonObj):
         for title in titles:
             tmpArrayItem = {}
             
-            tmpArrayItem['title'] = title.text
-            tmpArrayItem['firstRegist'] = firstRegist[index].text
-            tmpArrayItem['kilometers'] = kilometers[index].text
-            tmpArrayItem['fuel'] = fuel[index].text
-            tmpArrayItem['transmission'] = transmission[index].text
-            tmpArrayItem['engine'] = engine[index].text
-            tmpArrayItem['price'] = price[index].text
+            tmpArrayItem['title'] = title
+            tmpArrayItem['firstRegist'] = firstRegist[index]
+            tmpArrayItem['kilometers'] = kilometers[index]
+            tmpArrayItem['fuel'] = fuel[index]
+            tmpArrayItem['transmission'] = transmission[index]
+            tmpArrayItem['engine'] = engine[index]
+            tmpArrayItem['price'] = price[index]
             
             tmpItems.append(tmpArrayItem)
             
             index += 1
         
         jsonObj[url][name] = tmpItems
-"""
+
 def exportJson(jsonText):
     f = open(outputFolderStruct+"reExport.json", "wb")
     f.write(jsonText.encode('utf8'))
@@ -173,8 +172,8 @@ def main(printing):
     
     jsonObj = {}
     extractOverstock(jsonObj)
-    #extractRTV(jsonObj)
-    #extractOwnPages(jsonObj)
+    extractRTV(jsonObj)
+    extractOwnPages(jsonObj)
     
     jsonText = json.dumps(jsonObj, ensure_ascii=False) # ensure_ascii=False -> da zapisuje tudi čšž
     if(printing):
