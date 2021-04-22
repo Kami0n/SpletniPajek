@@ -13,8 +13,8 @@ from lxml import html
 from bs4 import BeautifulSoup
 from bs4 import NavigableString
 
-inputFolderStruct = "../input-extraction/"
-outputFolderStruct = "../"
+inputFolderStruct = '../input-extraction/'
+outputFolderStruct = '../'
 
 # zanimajo nas vsebinski deli ki se razlikujejo
 # roadrunner -> union-free regularni izrazi
@@ -30,15 +30,15 @@ def roadRunner(soup):
         for child in soup.children:
             if isinstance(child, NavigableString) and (str(child) == '\n' or str(child) == '\t' or str(child) == ''): # ignore whitespaces, tabs and newlines between nodes that we dont need to match
                 continue
-            print(str(child.name) + ":" + str(type(child)))
+            print(str(child.name) + ':' + str(type(child)))
             roadRunner(child)
             
     else: # to je string
-        print("STRING: ", soup.strip())
+        print('STRING: ', soup.strip())
     
 
 def prepareFile(filePath, enc='utf-8'):
-    r = open(filePath, "r", encoding=enc)
+    r = open(filePath, 'r', encoding=enc)
     html = r.read()
     
     # pobrisemo vse script, style, komentarje
@@ -47,13 +47,15 @@ def prepareFile(filePath, enc='utf-8'):
     html = re.sub(r'<!--([^<]*)-->', '', html)
     
     html_bs = BeautifulSoup(html, 'html.parser')
+    html_bs = html_bs.body.prettify()
+    html_bs = html_bs.split('\n') # vsaka vrstica v svoji celici v tabeli
     return html_bs
 
 def extractTest(jsonObj):
     url = 'test'
     testArray = {}
-    testArray['test1'] = prepareFile(inputFolderStruct+url+"/test1.html")
-    testArray['test2'] = prepareFile(inputFolderStruct+url+"/test2.html")
+    testArray['test1'] = prepareFile(inputFolderStruct+url+'/test1.html')
+    testArray['test2'] = prepareFile(inputFolderStruct+url+'/test2.html')
     
     print(testArray)
     
@@ -63,8 +65,8 @@ def extractTest(jsonObj):
 def extractRTV(jsonObj):
     url = 'rtvslo.si'
     rtvArray = {}
-    rtvArray['audi'] = prepareFile(inputFolderStruct+url+"/Audi A6 50 TDI quattro_ nemir v premijskem razredu - RTVSLO.si.html")
-    rtvArray['volvo'] = prepareFile(inputFolderStruct+url+"/Volvo XC 40 D4 AWD momentum_ suvereno med najboljše v razredu - RTVSLO.si.html")
+    rtvArray['audi'] = prepareFile(inputFolderStruct+url+'/Audi A6 50 TDI quattro_ nemir v premijskem razredu - RTVSLO.si.html')
+    rtvArray['volvo'] = prepareFile(inputFolderStruct+url+'/Volvo XC 40 D4 AWD momentum_ suvereno med najboljše v razredu - RTVSLO.si.html')
     
     print(rtvArray)
 
@@ -72,8 +74,8 @@ def extractRTV(jsonObj):
 def extractOverstock(jsonObj):
     url = 'overstock.com'
     overstockArray = {}
-    overstockArray['jewelry01'] = htmlFileRead(inputFolderStruct+url+"/jewelry01.html", 'mbcs')
-    overstockArray['jewelry02'] = htmlFileRead(inputFolderStruct+url+"/jewelry02.html", 'mbcs')
+    overstockArray['jewelry01'] = htmlFileRead(inputFolderStruct+url+'/jewelry01.html', 'mbcs')
+    overstockArray['jewelry02'] = htmlFileRead(inputFolderStruct+url+'/jewelry02.html', 'mbcs')
     
     jsonObj[url] = {}
     
@@ -102,8 +104,8 @@ def extractOverstock(jsonObj):
             tmpArrayItem['price'] = prices[index].text
             
             saving = savings[index].text
-            tmpArrayItem['saving'] = saving.split(" ")[0]
-            tmpArrayItem['savingPercent'] = saving.split(" ")[1]
+            tmpArrayItem['saving'] = saving.split(' ')[0]
+            tmpArrayItem['savingPercent'] = saving.split(' ')[1]
             
             tmpArrayItem['content'] = content[index].text
             
@@ -116,8 +118,8 @@ def extractOverstock(jsonObj):
 def extractOwnPages(jsonObj):
     url = 'avto.net'
     avtoArray = {}
-    avtoArray['Justy'] = htmlFileRead(inputFolderStruct+url+"/Justy.html", 'windows-1250')
-    avtoArray['Legacy'] = htmlFileRead(inputFolderStruct+url+"/Legacy.html", 'windows-1250')
+    avtoArray['Justy'] = htmlFileRead(inputFolderStruct+url+'/Justy.html', 'windows-1250')
+    avtoArray['Legacy'] = htmlFileRead(inputFolderStruct+url+'/Legacy.html', 'windows-1250')
     
     jsonObj[url] = {}
     
@@ -161,7 +163,7 @@ def extractOwnPages(jsonObj):
 """
 
 def exportJson(jsonText):
-    f = open(outputFolderStruct+"xPathExport.json", "wb")
+    f = open(outputFolderStruct+'xPathExport.json', 'wb')
     f.write(jsonText.encode('utf8'))
 
 def main(printing):
@@ -178,5 +180,5 @@ def main(printing):
     else:
         exportJson(jsonText)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main(False)
