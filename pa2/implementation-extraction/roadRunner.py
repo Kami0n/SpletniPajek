@@ -8,47 +8,67 @@
 # Check also other descriptions, e.g. paper 1 or paper 2.
 
 import json
+import regex as re
 from lxml import html
-from bs4 import BeautifulSoup, NavigableString
+from bs4 import BeautifulSoup
+from bs4 import NavigableString
 
 inputFolderStruct = "../input-extraction/"
 outputFolderStruct = "../"
 
-def htmlFileRead(filePath, enc='utf-8'):
-    f = open(filePath, "r", encoding=enc)
-    return f.read()
+# zanimajo nas vsebinski deli ki se razlikujejo
+# roadrunner -> union-free regularni izrazi
 
+# pristop:
+# začnemo z dvema stranema
+# ena stran ze predstavlja en regualrni izraz
+# z drugo stranjo generalizitamo ta regularni izraz
 
-
-
-def roadRunner(straniArray, jsonObj):
+def roadRunner(soup):
     
-    jsonObj[url] = {}
-    
-    for name,page in rtvArray.items():
-        #tree = html.fromstring(page)
-        #tmpJson = {}
-        
-        
-        soup = BeautifulSoup(page, "lxml")
-        roadRunner(soup)
-        
-        #jsonObj[url][name] = tmpJson
-    
-    
-    
+    if soup.name is not None: # if its tag
+        for child in soup.children:
+            if isinstance(child, NavigableString) and (str(child) == '\n' or str(child) == '\t' or str(child) == ''): # ignore whitespaces, tabs and newlines between nodes that we dont need to match
+                continue
+            print(str(child.name) + ":" + str(type(child)))
+            roadRunner(child)
+            
+    else: # to je string
+        print("STRING: ", soup.strip())
     
 
 
+def prepareFile(filePath, enc='utf-8'):
+    r = open(filePath, "r", encoding=enc)
+    html = r.read()
+    
+    # pobrisemo vse script, style, komentarje
+    html1 = re.sub(r'<script>([^<]*)</script>', '', html)
+    html2 = re.sub(r'<style>([^<]*)</style>', '', html1)
+    html3 = re.sub(r'<!--([^<]*)-->', '', html2)
+    
+    html_bs = BeautifulSoup(html3, 'html.parser')
+    return html_bs
+
+def extractTest(jsonObj):
+    url = 'test'
+    testArray = {}
+    testArray['test1'] = prepareFile(inputFolderStruct+url+"/test1.html")
+    testArray['test2'] = prepareFile(inputFolderStruct+url+"/test2.html")
+    
+    print(testArray)
+    
+    #roadRunner(testArray['test1'])
+    
 
 def extractRTV(jsonObj):
     url = 'rtvslo.si'
     rtvArray = {}
-    rtvArray['audi'] = htmlFileRead(inputFolderStruct+url+"/Audi A6 50 TDI quattro_ nemir v premijskem razredu - RTVSLO.si.html")
-    rtvArray['volvo'] = htmlFileRead(inputFolderStruct+url+"/Volvo XC 40 D4 AWD momentum_ suvereno med najboljše v razredu - RTVSLO.si.html")
+    rtvArray['audi'] = prepareFile(inputFolderStruct+url+"/Audi A6 50 TDI quattro_ nemir v premijskem razredu - RTVSLO.si.html")
+    rtvArray['volvo'] = prepareFile(inputFolderStruct+url+"/Volvo XC 40 D4 AWD momentum_ suvereno med najboljše v razredu - RTVSLO.si.html")
     
-    roadRunner(rtvArray, jsonObj)
-    
+    print(rtvArray)
+
 """
 def extractOverstock(jsonObj):
     url = 'overstock.com'
@@ -140,16 +160,18 @@ def extractOwnPages(jsonObj):
         
         jsonObj[url][name] = tmpItems
 """
+
 def exportJson(jsonText):
     f = open(outputFolderStruct+"xPathExport.json", "wb")
     f.write(jsonText.encode('utf8'))
 
 def main(printing):
-    
     jsonObj = {}
     #extractOverstock(jsonObj)
-    extractRTV(jsonObj)
+    #extractRTV(jsonObj)
     #extractOwnPages(jsonObj)
+    
+    extractTest(jsonObj)
     
     jsonText = json.dumps(jsonObj, ensure_ascii=False) # ensure_ascii=False -> da zapisuje tudi čšž
     if(printing):
