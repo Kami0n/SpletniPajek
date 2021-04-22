@@ -37,17 +37,16 @@ def roadRunner(soup):
         print("STRING: ", soup.strip())
     
 
-
 def prepareFile(filePath, enc='utf-8'):
     r = open(filePath, "r", encoding=enc)
     html = r.read()
     
     # pobrisemo vse script, style, komentarje
-    html1 = re.sub(r'<script>([^<]*)</script>', '', html)
-    html2 = re.sub(r'<style>([^<]*)</style>', '', html1)
-    html3 = re.sub(r'<!--([^<]*)-->', '', html2)
+    html = re.sub(r'<script[^>]*?>([^<]*)</script>', '', html)
+    html = re.sub(r'<style[^>]*?>([^<]*)</style>', '', html)
+    html = re.sub(r'<!--([^<]*)-->', '', html)
     
-    html_bs = BeautifulSoup(html3, 'html.parser')
+    html_bs = BeautifulSoup(html, 'html.parser')
     return html_bs
 
 def extractTest(jsonObj):
@@ -168,10 +167,10 @@ def exportJson(jsonText):
 def main(printing):
     jsonObj = {}
     #extractOverstock(jsonObj)
-    #extractRTV(jsonObj)
+    extractRTV(jsonObj)
     #extractOwnPages(jsonObj)
     
-    extractTest(jsonObj)
+    #extractTest(jsonObj)
     
     jsonText = json.dumps(jsonObj, ensure_ascii=False) # ensure_ascii=False -> da zapisuje tudi čšž
     if(printing):
