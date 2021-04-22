@@ -24,9 +24,9 @@ outputFolderStruct = '../'
 # ena stran ze predstavlja en regualrni izraz
 # z drugo stranjo generalizitamo ta regularni izraz
 
-def roadRunner(soup):
-    
-    if soup.name is not None: # if its tag
+
+"""
+if soup.name is not None: # if its tag
         for child in soup.children:
             if isinstance(child, NavigableString) and (str(child) == '\n' or str(child) == '\t' or str(child) == ''): # ignore whitespaces, tabs and newlines between nodes that we dont need to match
                 continue
@@ -35,7 +35,51 @@ def roadRunner(soup):
             
     else: # to je string
         print('STRING: ', soup.strip())
+"""
+
+def typeOfLocation(string):
+    if string.startswith("<") and string.endswith(">"):
+        return "tag"
+    else:
+        return "string"
+
+
+def roadRunner(soups, ime1, ime2):
     
+    regexIzraz = ""
+    
+    stran1 = soups[ime1]
+    stran2 = soups[ime2]
+    
+    dolzina1 = len(stran1)-1
+    dolzina2 = len(stran2)-1
+    
+    pozicija1 = 0
+    pozicija2 = 0
+    
+    while pozicija1 < dolzina1 or pozicija2 < dolzina2:
+        
+        if stran1[pozicija1] != stran2[pozicija2]:
+            tip1 = typeOfLocation(stran1[pozicija1])
+            tip2 = typeOfLocation(stran2[pozicija2])
+            
+            # string mismatch
+            if tip1 == tip2 == "string":
+                #print(stran1[pozicija1], "|", stran2[pozicija2])
+                if stran1[pozicija1]:
+                    stran1[pozicija1] = "#PCDATA"
+                if stran2[pozicija2]:
+                    stran2[pozicija2] = "#PCDATA"
+            
+            
+            
+            
+            
+            
+        if pozicija1 < dolzina1:
+            pozicija1 += 1
+        if pozicija2 < dolzina2:
+            pozicija2 += 1
 
 def prepareFile(filePath, enc='utf-8'):
     r = open(filePath, 'r', encoding=enc)
@@ -49,6 +93,7 @@ def prepareFile(filePath, enc='utf-8'):
     html_bs = BeautifulSoup(html, 'html.parser')
     html_bs = html_bs.body.prettify()
     html_bs = html_bs.split('\n') # vsaka vrstica v svoji celici v tabeli
+    html_bs = [space.strip() for space in html_bs] # pobrisi vse zamike (prazne znake, space)
     return html_bs
 
 def extractTest(jsonObj):
@@ -57,9 +102,8 @@ def extractTest(jsonObj):
     testArray['test1'] = prepareFile(inputFolderStruct+url+'/test1.html')
     testArray['test2'] = prepareFile(inputFolderStruct+url+'/test2.html')
     
-    print(testArray)
-    
-    #roadRunner(testArray['test1'])
+    #print(testArray)
+    roadRunner(testArray, 'test1', 'test2')
     
 
 def extractRTV(jsonObj):
@@ -169,10 +213,10 @@ def exportJson(jsonText):
 def main(printing):
     jsonObj = {}
     #extractOverstock(jsonObj)
-    extractRTV(jsonObj)
+    #extractRTV(jsonObj)
     #extractOwnPages(jsonObj)
     
-    #extractTest(jsonObj)
+    extractTest(jsonObj)
     
     jsonText = json.dumps(jsonObj, ensure_ascii=False) # ensure_ascii=False -> da zapisuje tudi čšž
     if(printing):
