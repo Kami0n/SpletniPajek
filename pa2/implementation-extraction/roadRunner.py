@@ -1,11 +1,15 @@
 
-# For each given web page type implement a separate function that will take HTML code as input.
-# The method should output extracted data in a JSON structured format to a standard output.
-# Each data item must be directly extracted using an XPath expression.
-# If the extracted value should be further processed, use regular expressions or other techniques to normalize them (for text only!).
+# RoadRunner-like implementation: Follow the implementation guidelines presented at the lectures.
+# Apart from the guidelines you can introduce various heuristics (e.g. taking tag attributes into account, additional rules, …)
+# that may help you with the wrapper generation. Also, you can implement some preprocessing steps prior to running the algorithm.
+# It is expected, that the generated wrapper may miss some of the data items and may include other unrelevant data items in the output.
+# You should comment or identify, which data items have not been recognized using the algorithm.
+# Full (official) implementation of the RoadRunner algorithm proposed in the literature is available online along with some examples.
+# Check also other descriptions, e.g. paper 1 or paper 2.
 
 import json
 from lxml import html
+from bs4 import BeautifulSoup, NavigableString
 
 inputFolderStruct = "../input-extraction/"
 outputFolderStruct = "../"
@@ -13,45 +17,39 @@ outputFolderStruct = "../"
 def htmlFileRead(filePath, enc='utf-8'):
     f = open(filePath, "r", encoding=enc)
     return f.read()
-"""
+
+
+
+
+def roadRunner(straniArray, jsonObj):
+    
+    jsonObj[url] = {}
+    
+    for name,page in rtvArray.items():
+        #tree = html.fromstring(page)
+        #tmpJson = {}
+        
+        
+        soup = BeautifulSoup(page, "lxml")
+        roadRunner(soup)
+        
+        #jsonObj[url][name] = tmpJson
+    
+    
+    
+    
+
+
+
 def extractRTV(jsonObj):
     url = 'rtvslo.si'
     rtvArray = {}
     rtvArray['audi'] = htmlFileRead(inputFolderStruct+url+"/Audi A6 50 TDI quattro_ nemir v premijskem razredu - RTVSLO.si.html")
     rtvArray['volvo'] = htmlFileRead(inputFolderStruct+url+"/Volvo XC 40 D4 AWD momentum_ suvereno med najboljše v razredu - RTVSLO.si.html")
     
-    jsonObj[url] = {}
+    roadRunner(rtvArray, jsonObj)
     
-    for name,page in rtvArray.items():
-        tree = html.fromstring(page)
-        tmpJson = {}
-        
-        #extract author
-        author = tree.xpath('string(/html/body/div[@id="main-container"]/div[3]/div/div[1]/div[1]/div)')
-        tmpJson['author'] = author
-        
-        # extract publish date/time
-        datetime = tree.xpath('string(/html/body/div[@id="main-container"]/div[3]/div/div[1]/div[2])')
-        tmpJson['datetime'] = datetime
-        
-        # extract title
-        title = tree.xpath('string(/html/body/div[@id="main-container"]/div[3]/div/header/h1)')
-        tmpJson['title'] = title
-        
-        # extract subtitle
-        subtitle = tree.xpath('string(/html/body/div[@id="main-container"]/div[3]/div/header/div[2])')
-        tmpJson['subtitle'] = subtitle
-        
-        # extract lead
-        lead = tree.xpath('string(/html/body/div[@id="main-container"]/div[3]/div/header/p)')
-        tmpJson['lead'] = lead
-        
-        # extract content
-        content = tree.xpath('/html/body/div[@id="main-container"]/div[3]/div/div[2]/descendant::*/text()[not(ancestor::script)]') # - minus scripts
-        tmpJson['content'] = content
-        
-        jsonObj[url][name] = tmpJson
-
+"""
 def extractOverstock(jsonObj):
     url = 'overstock.com'
     overstockArray = {}
@@ -150,7 +148,7 @@ def main(printing):
     
     jsonObj = {}
     #extractOverstock(jsonObj)
-    #extractRTV(jsonObj)
+    extractRTV(jsonObj)
     #extractOwnPages(jsonObj)
     
     jsonText = json.dumps(jsonObj, ensure_ascii=False) # ensure_ascii=False -> da zapisuje tudi čšž
