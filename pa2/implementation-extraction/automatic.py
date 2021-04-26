@@ -11,7 +11,11 @@ import warnings
 inputFolderStruct = '../input-extraction/'
 outputFolderStruct = '../'
 
-
+def pageComparator(tag1, tag2, ignore_nesting_level):
+    resultComp = ""
+    score = 0
+    
+    return resultComp, score
 
 def prepareFile(filePath, enc='utf-8'):
     f1 = codecs.open(filePath, encoding='utf-8', errors='replace')
@@ -39,8 +43,8 @@ def extractTest(printing):
     body1 = testArray['test1'].find("body")
     body2 = testArray['test2'].find("body")
     
-    result, value = compare(body1, body2, ignoreLevel)
-    showOvojnica(url, result, value, printing)
+    result, score = pageComparator(body1, body2, ignoreLevel)
+    showOvojnica(url, result, score, printing)
 
 def extractRTV(printing):
     url = 'rtvslo.si'
@@ -52,8 +56,8 @@ def extractRTV(printing):
     body1 = rtvArray['audi'].find("body")
     body2 = rtvArray['volvo'].find("body")
     
-    result, value = compare(body1, body2, ignoreLevel)
-    showOvojnica(url, result, value, printing)
+    result, score = pageComparator(body1, body2, ignoreLevel)
+    showOvojnica(url, result, score, printing)
 
 def extractOverstock(printing):
     url = 'overstock.com'
@@ -65,8 +69,8 @@ def extractOverstock(printing):
     body1 = overstockArray['jewelry01'].find("body")
     body2 = overstockArray['jewelry02'].find("body")
     
-    result, value = compare(body1, body2, ignoreLevel)
-    showOvojnica(url, result, value, printing)
+    result, score = pageComparator(body1, body2, ignoreLevel)
+    showOvojnica(url, result, score, printing)
 
 def extractOwnPages(printing):
     url = 'avto.net'
@@ -78,10 +82,10 @@ def extractOwnPages(printing):
     body1 = avtoArray['Justy'].find("body")
     body2 = avtoArray['Legacy'].find("body")
     
-    result, value = compare(body1, body2, ignoreLevel)
-    showOvojnica(url, result, value, printing)
+    result, score = pageComparator(body1, body2, ignoreLevel)
+    showOvojnica(url, result, score, printing)
 
-def showOvojnica(ime, result, value, printing):
+def showOvojnica(ime, result, score, printing):
     print("\n*************************************")
     print("Generalizirana ovojnica strani "+ime+":\n")
 
