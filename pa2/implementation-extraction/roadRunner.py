@@ -44,6 +44,15 @@ def typeOfLocation(string):
         return "string"
 
 
+def checkEndTag(start, tagsArray):
+    for position in reversed(range(start)):
+        print("tag", position, tagsArray[position])
+        
+        if tagsArray[position].startswith("</"):
+            endTag = tagsArray[position]
+            return position
+        
+
 def roadRunner(soups, ime1, ime2):
     
     regexIzraz = ""
@@ -59,18 +68,33 @@ def roadRunner(soups, ime1, ime2):
     
     while pozicija1 < dolzina1 or pozicija2 < dolzina2:
         
-        if stran1[pozicija1] != stran2[pozicija2]:
+        if stran1[pozicija1] != stran2[pozicija2]: # ce stvar na poziciji ni enaka, dejmo raziskat
+            
+            # ugotovimo kaksnega tipa so stvari na tej lokaciji
             tip1 = typeOfLocation(stran1[pozicija1])
             tip2 = typeOfLocation(stran2[pozicija2])
             
-            # string mismatch
-            if tip1 == tip2 == "string":
-                #print(stran1[pozicija1], "|", stran2[pozicija2])
+            if tip1 == tip2 == "string": # string mismatch
+                print("Razlicen tekst: ",stran1[pozicija1], "|", stran2[pozicija2])
                 if stran1[pozicija1]:
-                    stran1[pozicija1] = "#PCDATA"
+                    stran1[pozicija1] = "#PCDATA" # #PCDATA -> pomeni da nas info na tej lokaciji zanima!
                 if stran2[pozicija2]:
                     stran2[pozicija2] = "#PCDATA"
             
+            elif tip1 == tip2 == "tag": # tag mismatch
+                
+                # poišči zaključne značke
+                endTag1 = checkEndTag(pozicija1,stran1)
+                endTag2 = checkEndTag(pozicija2,stran2)
+                
+                endTag = None
+                if stran1[endTag1] == stran1[endTag2]:
+                    endTag = endTag1
+                else:
+                    print("\n\t", "ERROR: Closing tag is wrong!")
+                    print("\t", "stran1:", stran1[endTag1], "stran2:", stran2[endTag2], "\n")
+                
+                
             
             
             
@@ -88,7 +112,7 @@ def prepareFile(filePath, enc='utf-8'):
     # pobrisemo vse script, style, komentarje
     html = re.sub(r'<script[^>]*?>([^<]*)</script>', '', html)
     html = re.sub(r'<style[^>]*?>([^<]*)</style>', '', html)
-    html = re.sub(r'<!--([^<]*)-->', '', html)
+    html = re.sub(r'(?s)<!--(.*)-->', '', html)
     
     html_bs = BeautifulSoup(html, 'html.parser')
     html_bs = html_bs.body.prettify()
@@ -101,8 +125,6 @@ def extractTest(jsonObj):
     testArray = {}
     testArray['test1'] = prepareFile(inputFolderStruct+url+'/test1.html')
     testArray['test2'] = prepareFile(inputFolderStruct+url+'/test2.html')
-    
-    #print(testArray)
     roadRunner(testArray, 'test1', 'test2')
     
 
