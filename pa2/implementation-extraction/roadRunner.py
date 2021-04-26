@@ -19,30 +19,11 @@ outputFolderStruct = '../'
 # zanimajo nas vsebinski deli ki se razlikujejo
 # roadrunner -> union-free regularni izrazi
 
-# pristop:
-# začnemo z dvema stranema
-# ena stran ze predstavlja en regualrni izraz
-# z drugo stranjo generalizitamo ta regularni izraz
-
-
-"""
-if soup.name is not None: # if its tag
-        for child in soup.children:
-            if isinstance(child, NavigableString) and (str(child) == '\n' or str(child) == '\t' or str(child) == ''): # ignore whitespaces, tabs and newlines between nodes that we dont need to match
-                continue
-            print(str(child.name) + ':' + str(type(child)))
-            roadRunner(child)
-            
-    else: # to je string
-        print('STRING: ', soup.strip())
-"""
-
 def typeOfLocation(string):
     if string.startswith("<") and string.endswith(">"):
         return "tag"
     else:
         return "string"
-
 
 def checkEndTag(start, tagsArray):
     for position in reversed(range(start)):
@@ -50,7 +31,14 @@ def checkEndTag(start, tagsArray):
         if tagsArray[position].startswith("</"):
             endTag = tagsArray[position]
             return position
-        
+
+def optionalCheck():
+    found_tag_on_line = None
+    for additional in range(i1, len(cons1)):
+        print("opt1", cons1[additional])
+        if cons1[additional] == cons2[i2]:
+            found_tag_on_line = additional
+            break
 
 def roadRunner(soups, ime1, ime2):
     
@@ -87,19 +75,17 @@ def roadRunner(soups, ime1, ime2):
                 endTag2 = checkEndTag(pozicija2,stran2)
                 
                 endTag = None
-                if stran1[endTag1] == stran1[endTag2]: # optional ?
+                if stran1[endTag1] == stran2[endTag2]: # iterators (list of items)
                     endTag = endTag1
                     
                     
-                else: # iterators (list of items)
+                    
+                    
+                else: # optional (ce je zadnji tag drugacen, je potem to optional element)
                     print("\n\t", "ERROR: Closing tag is wrong!")
                     print("\t", "stran1:", stran1[endTag1], "stran2:", stran2[endTag2], "\n")
-                
-                
-            
-            
-            
-            
+                    
+                    
             
         if pozicija1 < dolzina1:
             pozicija1 += 1
