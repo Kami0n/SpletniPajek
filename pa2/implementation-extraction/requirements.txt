@@ -1,3 +1,4 @@
 lxml
 regex
 beautifulsoup4
+numpy
