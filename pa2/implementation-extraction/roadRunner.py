@@ -1,157 +1,204 @@
-
-# RoadRunner-like implementation: Follow the implementation guidelines presented at the lectures.
-# Apart from the guidelines you can introduce various heuristics (e.g. taking tag attributes into account, additional rules, …)
-# that may help you with the wrapper generation. Also, you can implement some preprocessing steps prior to running the algorithm.
-# It is expected, that the generated wrapper may miss some of the data items and may include other unrelevant data items in the output.
-# You should comment or identify, which data items have not been recognized using the algorithm.
-# Full (official) implementation of the RoadRunner algorithm proposed in the literature is available online along with some examples.
-# Check also other descriptions, e.g. paper 1 or paper 2.
-
-import json
-import regex as re
 from lxml import html
-from bs4 import BeautifulSoup
-from bs4 import NavigableString
+from bs4 import BeautifulSoup, Comment, Tag
+import numpy as np
 
 inputFolderStruct = '../input-extraction/'
 outputFolderStruct = '../'
 
-# zanimajo nas vsebinski deli ki se razlikujejo
-# roadrunner -> union-free regularni izrazi
+VARIABLE_STRING = '[ VARIABLE STRING ]'
 
-def typeOfLocation(string):
-    if string.startswith("<") and string.endswith(">"):
-        return "tag"
+def detectTag(s):
+    return "<" in s
+
+def clean_token(token):
+    has_starting_tag = "<" in token
+    has_start_ending_tag = "/>" in token
+    has_ending_tag = "</" in token
+
+    ss = token.split()
+    if len(ss) > 1:
+        if has_starting_tag and has_start_ending_tag:
+            return ss[0] + "/>"
+        else:
+            if has_starting_tag and not has_start_ending_tag:
+                return ss[0] + ">"
+            if has_ending_tag:
+                return ss[0] + ">"
     else:
-        return "string"
+        return ss[0]
 
-def checkEndTag(start, tagsArray):
-    for position in reversed(range(start)):
-        #print("tag", position, tagsArray[position])
-        if tagsArray[position].startswith("</"):
-            endTag = tagsArray[position]
-            return position
-
-def optionalCheck():
-    found_tag_on_line = None
-    for additional in range(i1, len(cons1)):
-        print("opt1", cons1[additional])
-        if cons1[additional] == cons2[i2]:
-            found_tag_on_line = additional
-            break
-
-def roadRunner(soups, ime1, ime2):
+def roadRunner(body1, body2):
     
-    regexIzraz = ""
+    i = 0
+    j = 0
     
-    stran1 = soups[ime1]
-    stran2 = soups[ime2]
+    result = []
+    wrapper = body1
     
-    dolzina1 = len(stran1)-1
-    dolzina2 = len(stran2)-1
-    
-    pozicija1 = 0
-    pozicija2 = 0
-    
-    while pozicija1 < dolzina1 or pozicija2 < dolzina2:
+    while i < len(body1) and j < len(body2):
         
-        if stran1[pozicija1] != stran2[pozicija2]: # ce stvar na poziciji ni enaka, dejmo raziskat
-            
-            # ugotovimo kaksnega tipa so stvari na tej lokaciji
-            tip1 = typeOfLocation(stran1[pozicija1])
-            tip2 = typeOfLocation(stran2[pozicija2])
-            
-            if tip1 == tip2 == "string": # string mismatch
-                print("Razlicen tekst: ",stran1[pozicija1], "|", stran2[pozicija2])
-                if stran1[pozicija1]:
-                    stran1[pozicija1] = "#PCDATA" # #PCDATA -> pomeni da nas info na tej lokaciji zanima!
-                if stran2[pozicija2]:
-                    stran2[pozicija2] = "#PCDATA"
-            
-            elif tip1 == tip2 == "tag": # tag mismatch
+        token1 = body1[i]
+        token2 = body2[j]
+        
+        if detectTag(token1) and detectTag(token2):
+            if token1.split()[0] == token2.split()[0]: # same tag
+                result.append(clean_token(token1))
                 
-                # poišči zaključne značke
-                endTag1 = checkEndTag(pozicija1,stran1)
-                endTag2 = checkEndTag(pozicija2,stran2)
-                
-                endTag = None
-                if stran1[endTag1] == stran2[endTag2]: # iterators (list of items)
-                    endTag = endTag1
-                    
-                    
-                    
-                    
-                else: # optional (ce je zadnji tag drugacen, je potem to optional element)
-                    print("\n\t", "ERROR: Closing tag is wrong!")
-                    print("\t", "stran1:", stran1[endTag1], "stran2:", stran2[endTag2], "\n")
-                    
-                    
             
-        if pozicija1 < dolzina1:
-            pozicija1 += 1
-        if pozicija2 < dolzina2:
-            pozicija2 += 1
+            else: # tag mismatch
+                
+                result.append("tag mismatch")
+                
+            """
+            else:
+                iterator = self.check_iterator(i, j)
+                if iterator and all(iterator):
+                    sample_end_of_iterator, wrapper_start_of_iterator, wrapper_end_of_iterator, iterator_square = iterator
+                    prvi_del = self.wrapper[:wrapper_start_of_iterator]
+                    drugi_del = self.wrapper[wrapper_end_of_iterator + 1:]
+                    self.wrapper = prvi_del + [("Iterator", iterator_square)] + drugi_del
+                    i = wrapper_start_of_iterator + 1
+                    j = sample_end_of_iterator + 1
+                else:
+                    file, start_optional, end_optional = self.check_optional(i, j)
+                    if file == "wrapper":
+                        if end_optional:
+                            #a = t[:i+1] + [4] + t[i+1:]
+                            optional = self.wrapper[start_optional:end_optional]
+                            self.wrapper = self.wrapper[:i] + [("Optional" ,self.clean_object(optional))] + self.wrapper[i:]
+                            i = end_optional + 1
+                            continue
+                    else:
+                        if end_optional:
+                            optional = self.sample[start_optional:end_optional]
+                            self.wrapper = self.wrapper[:i] + [("Optional", self.clean_object(optional))] + self.wrapper[i:]
+                            j = end_optional
+                            i += 1
+                            continue
+            """
+        
+        elif not detectTag(token1) and not detectTag(token2):
+            if token1 == token2:
+                result.append(token1)
+            else:
+                result.append(VARIABLE_STRING)
+        i += 1
+        j += 1
+    # konec zanke
+    
+    return result
+
 
 def prepareFile(filePath, enc='utf-8'):
-    r = open(filePath, 'r', encoding=enc)
-    html = r.read()
+    file = open(filePath, 'r', encoding=enc)
+    htmlBs = BeautifulSoup(file.read(), 'lxml')
     
-    # pobrisemo vse script, style, komentarje
-    html = re.sub(r'(?s)<script[^>]*?>([^<]*)</script>', '', html)
-    html = re.sub(r'(?s)<style[^>]*?>([^<]*)</style>', '', html)
-    html = re.sub(r'(?s)<!--(.*)-->', '', html)
+    # remove all comments
+    for comment in htmlBs.findAll(text=lambda text: isinstance(text, Comment)):
+        comment.extract()
     
-    html_bs = BeautifulSoup(html, 'html.parser')
-    html_bs = html_bs.body.prettify()
-    html_bs = html_bs.split('\n') # vsaka vrstica v svoji celici v tabeli
-    html_bs = [space.strip() for space in html_bs] # pobrisi vse zamike (prazne znake, space)
-    return html_bs
+    # remove unwanted elements
+    elementsRemoveArray = ['style', 'script', 'link', 'meta', 'iframe', 'nav', 'map', 'input', 'svg', 'img', 'picture', 'figure', 'figcaption', 'footer']
+    for elementRemove in elementsRemoveArray:
+        [element.decompose() for element in htmlBs.findAll(elementRemove)]
+    
+    elementsAvto = [{'class':'modal-body'}, {'class':'modal'}, {'id':'LegendaModal'}, {'id':'FilterModal'}, {'class':'GO-ResultsMenuBox'}]
+    for element in elementsAvto:
+        for div in htmlBs.findAll('div', element): 
+            div.decompose()
+    
+    htmlString = htmlBs.prettify()
+    htmlArray = [x.strip() for x in htmlString.split("\n") if x]
+    
+    htmlReturnArray = []
+    tmp = " "
+    
+    for i in range(len(htmlArray)):
+        if detectTag(htmlArray[i]):
+            htmlReturnArray.append(htmlArray[i])
+        else:
+            if not detectTag(htmlArray[i]): # is string ?
+                tmp += htmlArray[i].strip() + " "
+            if detectTag(htmlArray[i + 1]): # is tag
+                htmlReturnArray.append(tmp.strip())
+                tmp = ""
+    
+    return htmlReturnArray
 
-def extractTest(jsonObj):
-    url = 'test'
-    testArray = {}
-    testArray['test1'] = prepareFile(inputFolderStruct+url+'/test1.html')
-    testArray['test2'] = prepareFile(inputFolderStruct+url+'/test2.html')
-    roadRunner(testArray, 'test1', 'test2')
-
-def extractRTV(jsonObj):
+def extractRTV(printing):
     url = 'rtvslo.si'
+    ignoreLevel = 4
     rtvArray = {}
     rtvArray['audi'] = prepareFile(inputFolderStruct+url+'/Audi A6 50 TDI quattro_ nemir v premijskem razredu - RTVSLO.si.html')
     rtvArray['volvo'] = prepareFile(inputFolderStruct+url+'/Volvo XC 40 D4 AWD momentum_ suvereno med najboljše v razredu - RTVSLO.si.html')
-    roadRunner(rtvArray, 'audi', 'volvo')
+    
+    body1 = rtvArray['audi'].find('body')
+    body2 = rtvArray['volvo'].find('body')
+    
+    wrapper = roadRunner(body1, body2)
+    showOvojnica(url, wrapper, printing)
 
-def extractOverstock(jsonObj):
+def extractOverstock(printing):
     url = 'overstock.com'
+    ignoreLevel = 5
     overstockArray = {}
-    overstockArray['jewelry01'] = htmlFileRead(inputFolderStruct+url+'/jewelry01.html', 'mbcs')
-    overstockArray['jewelry02'] = htmlFileRead(inputFolderStruct+url+'/jewelry02.html', 'mbcs')
-    roadRunner(overstockArray, 'jewelry01', 'jewelry02')
+    overstockArray['jewelry01'] = prepareFile(inputFolderStruct+url+'/jewelry01.html', 'mbcs')
+    overstockArray['jewelry02'] = prepareFile(inputFolderStruct+url+'/jewelry02.html', 'mbcs')
+    
+    body1 = overstockArray['jewelry01'].find('body')
+    body2 = overstockArray['jewelry02'].find('body')
+    
+    wrapper = roadRunner(body1, body2)
+    showOvojnica(url, wrapper, printing)
 
-def extractOwnPages(jsonObj):
+def extractOwnPages(printing):
     url = 'avto.net'
+    ignoreLevel = 4
     avtoArray = {}
-    avtoArray['Justy'] = htmlFileRead(inputFolderStruct+url+'/Justy.html', 'windows-1250')
-    avtoArray['Legacy'] = htmlFileRead(inputFolderStruct+url+'/Legacy.html', 'windows-1250')
-    roadRunner(avtoArray, 'Justy', 'Legacy')
+    avtoArray['Justy'] = prepareFile(inputFolderStruct+url+'/Justy.html', 'windows-1250')
+    avtoArray['Legacy'] = prepareFile(inputFolderStruct+url+'/Legacy.html', 'windows-1250')
+    
+    body1 = avtoArray['Justy'].find('body')
+    body2 = avtoArray['Legacy'].find('body')
+    
+    wrapper = roadRunner(body1, body2)
+    showOvojnica(url, wrapper, printing)
 
-def exportJson(jsonText):
-    f = open(outputFolderStruct+'xPathExport.json', 'wb')
-    f.write(jsonText.encode('utf8'))
+def extractTest(printing):
+    url = 'test'
+    ignoreLevel = 4
+    
+    body1 = prepareFile(inputFolderStruct+url+'/test1.html')
+    body2 = prepareFile(inputFolderStruct+url+'/test2.html')
+    
+    wrapper = roadRunner(body1, body2)
+    showOvojnica(url, wrapper, printing)
+
+
+def showOvojnica(ime, result, printing):
+    
+    stringResult = ""
+    for cell in result:
+        stringResult = stringResult + "\n"+cell
+    
+    soupResult = BeautifulSoup(stringResult, 'lxml')
+    resultBody = soupResult.find('body')
+    ovojnica = resultBody.prettify(encoding=None, formatter=None) # 'minimal'
+    
+    if(printing):
+        print('\nGeneralizirana ovojnica strani '+ime+':\n')
+        print(ovojnica) # The method should output extracted data in a JSON structured format to a standard output.
+    
+    print('\nGeneralizirana ovojnica strani '+ime+' je zapisana v datoteko.\n')
+    f = open(outputFolderStruct+'automatic.xml', 'wb')
+    f.write(ovojnica.encode('utf8'))
 
 def main(printing):
-    jsonObj = {}
-    #extractOverstock(jsonObj)
-    #extractRTV(jsonObj)
-    #extractOwnPages(jsonObj)
-    
-    extractTest(jsonObj)
-    
-    jsonText = json.dumps(jsonObj, ensure_ascii=False) # ensure_ascii=False -> da zapisuje tudi čšž
-    if(printing):
-        print(jsonText) # The method should output extracted data in a JSON structured format to a standard output.
-    else:
-        exportJson(jsonText)
+    #extractOverstock(printing)
+    #extractRTV(printing)
+    #extractOwnPages(printing)
+    extractTest(printing)
 
 if __name__ == '__main__':
-    main(False)
+    printing = True
+    main(printing)
