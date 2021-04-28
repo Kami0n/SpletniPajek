@@ -26,5 +26,7 @@ For road runner implementation:
 python run-extraction.py C
 ```
 
+## Additional selected web page: avto.net (list of cars/classified ads)
 
+![avto.net](sampleAvtonet.jpg?raw=true "avto.net")
 
