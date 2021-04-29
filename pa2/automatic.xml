@@ -1,42 +1,24 @@
 <body>
- <p>
-  >
- </p>
- >
->
->
  <div>
-  >
-Books of:
+  Books of:
   <div>
-   >
-[ VARIABLE STRING ]
+   [ VARIABLE STRING ]
   </div>
-  >
   <div>
    <ul>
-    >
     <li>
-     >
      <i>
-      >
-Title:
+      Title:
      </i>
-     >
-[ VARIABLE STRING ]
+     [ VARIABLE STRING ]
     </li>
-    >
     <li>
-     >
      <i>
-      >
-Title:
+      Title:
      </i>
-     >
-[ VARIABLE STRING ]
+     [ VARIABLE STRING ]
     </li>
-    >
-tag mismatch
+    tag mismatch
 tag mismatch
 tag mismatch
    </ul>
