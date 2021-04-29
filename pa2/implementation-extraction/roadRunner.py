@@ -10,19 +10,19 @@ VARIABLE_STRING = '[ VARIABLE STRING ]'
 def detectTag(s):
     return "<" in s
 
-def clean_token(token):
-    has_starting_tag = "<" in token
-    has_start_ending_tag = "/>" in token
-    has_ending_tag = "</" in token
+def cleanToken(token):
+    startTag = "<" in token
+    selfEndTag = "/>" in token
+    endTag = "</" in token
 
     ss = token.split()
     if len(ss) > 1:
-        if has_starting_tag and has_start_ending_tag:
+        if startTag and selfEndTag:
             return ss[0] + "/>"
         else:
-            if has_starting_tag and not has_start_ending_tag:
+            if startTag and not selfEndTag:
                 return ss[0] + ">"
-            if has_ending_tag:
+            if endTag:
                 return ss[0] + ">"
     else:
         return ss[0]
@@ -42,40 +42,12 @@ def roadRunner(body1, body2):
         
         if detectTag(token1) and detectTag(token2):
             if token1.split()[0] == token2.split()[0]: # same tag
-                result.append(clean_token(token1))
+                result.append(cleanToken(token1))
                 
             
             else: # tag mismatch
-                
                 result.append("tag mismatch")
                 
-            """
-            else:
-                iterator = self.check_iterator(i, j)
-                if iterator and all(iterator):
-                    sample_end_of_iterator, wrapper_start_of_iterator, wrapper_end_of_iterator, iterator_square = iterator
-                    prvi_del = self.wrapper[:wrapper_start_of_iterator]
-                    drugi_del = self.wrapper[wrapper_end_of_iterator + 1:]
-                    self.wrapper = prvi_del + [("Iterator", iterator_square)] + drugi_del
-                    i = wrapper_start_of_iterator + 1
-                    j = sample_end_of_iterator + 1
-                else:
-                    file, start_optional, end_optional = self.check_optional(i, j)
-                    if file == "wrapper":
-                        if end_optional:
-                            #a = t[:i+1] + [4] + t[i+1:]
-                            optional = self.wrapper[start_optional:end_optional]
-                            self.wrapper = self.wrapper[:i] + [("Optional" ,self.clean_object(optional))] + self.wrapper[i:]
-                            i = end_optional + 1
-                            continue
-                    else:
-                        if end_optional:
-                            optional = self.sample[start_optional:end_optional]
-                            self.wrapper = self.wrapper[:i] + [("Optional", self.clean_object(optional))] + self.wrapper[i:]
-                            j = end_optional
-                            i += 1
-                            continue
-            """
         
         elif not detectTag(token1) and not detectTag(token2):
             if token1 == token2:
