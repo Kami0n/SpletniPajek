@@ -21,7 +21,7 @@ For xPath implementation:
 python run-extraction.py B
 ```
 
-For road runner implementation:
+For road runner implementation (not fully implemented!):
 ```
 python run-extraction.py C
 ```
