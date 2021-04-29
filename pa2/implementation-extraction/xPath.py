@@ -9,7 +9,7 @@ import re
 from lxml import html
 
 inputFolderStruct = "../input-extraction/"
-outputFolderStruct = "../"
+outputFolderStruct = "../results"
 
 def htmlFileRead(filePath, enc='utf-8'):
     f = open(filePath, "r", encoding=enc)

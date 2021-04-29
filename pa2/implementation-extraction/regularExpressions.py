@@ -8,7 +8,7 @@ import json
 import regex as re
 
 inputFolderStruct = "../input-extraction/"
-outputFolderStruct = "../"
+outputFolderStruct = "../results"
 
 def htmlFileRead(filePath, enc='utf-8'):
     f = open(filePath, "r", encoding=enc)

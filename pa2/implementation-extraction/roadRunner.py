@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup, Comment, Tag
 import numpy as np
 
 inputFolderStruct = '../input-extraction/'
-outputFolderStruct = '../'
+outputFolderStruct = '../results'
 
 VARIABLE_STRING = '[ VARIABLE STRING ]'
 
