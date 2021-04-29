@@ -71,7 +71,7 @@ def extractRTV(jsonObj):
         articleContent = articleContent.replace('<br>','\n').strip()
         
         tmpJson['content'] = articleContent
-        print(tmpJson['content'])
+        #print(tmpJson['content'])
         
         jsonObj[url][name] = tmpJson
 
