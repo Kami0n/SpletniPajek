@@ -11,4 +11,10 @@ pip install -r requirements.txt
 
 Move to folder `pa3/implementation-indexing` and run:
 
+```
+run-basic-search.py
+```
 
+```
+run-sqlite-search.py
+```
