@@ -52,14 +52,15 @@ def insertIndexWord(data):
     conn.commit()
 
 
-baseDir = "../PA3-test"
-#baseDir = "../PA3-data"
+#baseDir = "../PA3-test"
+baseDir = "../PA3-data"
 htmlText = []
 for path, subdirs, files in os.walk(baseDir):
     for name in files:
         htmlText += prepareText(os.path.join(path, name))
         print(htmlText)
-    insertIndexWord(htmlText)
+
+insertIndexWord(htmlText)
 
 
 # pridobimo besedilo iz vsake spletne strani:
