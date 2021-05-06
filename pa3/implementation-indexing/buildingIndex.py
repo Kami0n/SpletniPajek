@@ -39,25 +39,26 @@ def prepareText(filePath, enc='utf-8'):
     filtered_sentence = [w for w in word_tokens if not w in stop_words_slovene]
     return filtered_sentence
 
-
-baseDir = "../PA3-test"
-#baseDir = "../PA3-data"
-htmlText = []
-for path, subdirs, files in os.walk(baseDir):
-    for name in files:
-        htmlText += prepareText(os.path.join(path, name))
-        print(htmlText)
-    keys = list(dict.fromkeys(htmlText))
+def insertIndexWord(data):
+    keys = list(dict.fromkeys(data))
     c = conn.cursor()
     for key in keys:
         query1 = "INSERT INTO IndexWord VALUES('" + key + "');"
         try:
             c.execute(query1)
         except sqlite3.IntegrityError:
-            print("### "+query1)
-            print()
-
+            pass
     conn.commit()
+
+#baseDir = "/PA3-test"
+baseDir = "../PA3-data"
+htmlText = []
+for path, subdirs, files in os.walk(baseDir):
+    for name in files:
+        htmlText += prepareText(os.path.join(path, name))
+        print(htmlText)
+        insertIndexWord(htmlText)
+
 
 # pridobimo besedilo iz vsake spletne strani:
 # funkcija text na vsaki spletni strani
