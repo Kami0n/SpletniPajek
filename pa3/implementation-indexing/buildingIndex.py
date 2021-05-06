@@ -36,17 +36,28 @@ def prepareText(filePath, enc='utf-8'):
     word_tokens = word_tokenize(textLower)
     
     # stop word removal
-    filtered_sentence = [w for w in word_tokens if not w in stop_words_slovene] 
-    
+    filtered_sentence = [w for w in word_tokens if not w in stop_words_slovene]
     return filtered_sentence
 
 
 baseDir = "../PA3-test"
 #baseDir = "../PA3-data"
+htmlText = []
 for path, subdirs, files in os.walk(baseDir):
     for name in files:
-        htmlText = prepareText(os.path.join(path, name))
+        htmlText += prepareText(os.path.join(path, name))
         print(htmlText)
+    keys = list(dict.fromkeys(htmlText))
+    c = conn.cursor()
+    for key in keys:
+        query1 = "INSERT INTO IndexWord VALUES('" + key + "');"
+        try:
+            c.execute(query1)
+        except sqlite3.IntegrityError:
+            print("### "+query1)
+            print()
+
+    conn.commit()
 
 # pridobimo besedilo iz vsake spletne strani:
 # funkcija text na vsaki spletni strani
