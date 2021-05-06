@@ -34,6 +34,14 @@ conn.commit()
 #         ('+beseda+');
 # ''')
 
+
+
+# key2 = "uveljavite"
+# query1 = "INSERT INTO IndexWord VALUES('" + key2 + "');"
+# c.execute(query1)
+
+
+
 # c.execute('''
 #     INSERT INTO Posting VALUES
 #         ('Spar', 'spar.si/info.html', 1, '92'),
@@ -49,7 +57,7 @@ conn.commit()
 
 print("Selecting all the data from the Posting table:")
 
-for row in c.execute("SELECT * FROM IndexWord i"):
+for row in c.execute("SELECT count(*) FROM IndexWord i"):
     print(f"\t{row}")
 
 

@@ -43,7 +43,14 @@ def insertIndexWord(data):
     keys = list(dict.fromkeys(htmlText))
     c = conn.cursor()
     for key in keys:
+        if key[0] == "'" or '"':
+            key=key[1::]
+            print(key)
+        if key[-1] == "'" or '"':
+            key=key[::-1]
+            print(key)
         query1 = "INSERT INTO IndexWord VALUES('" + key + "');"
+
         try:
             c.execute(query1)
         except sqlite3.IntegrityError:
@@ -60,7 +67,9 @@ for path, subdirs, files in os.walk(baseDir):
         htmlText += prepareText(os.path.join(path, name))
         print(htmlText)
 
+print("### ")
 insertIndexWord(htmlText)
+
 
 
 # pridobimo besedilo iz vsake spletne strani:
