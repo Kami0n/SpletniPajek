@@ -3,7 +3,7 @@ conn = sqlite3.connect('inverted-index.db')
 
 # Create table
 c = conn.cursor()
-
+#
 # c.execute('''
 #     CREATE TABLE IndexWord (
 #         word TEXT PRIMARY KEY
