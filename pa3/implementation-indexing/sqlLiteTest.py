@@ -61,20 +61,20 @@ for row in c.execute("SELECT count(*) FROM IndexWord i"):
     print(f"\t{row}")
 
 
-# print("Get all documents that contain 'Tuš' or 'Mercator'.")
-#
-# cursor = c.execute('''
-#     SELECT p.documentName AS docName, SUM(frequency) AS freq, GROUP_CONCAT(indexes) AS idxs
-#     FROM Posting p
-#     WHERE
-#         p.word IN ('Tuš', 'Mercator')
-#     GROUP BY p.documentName
-#     ORDER BY freq DESC;
-# ''')
+print("Get all documents that contain 'trga' or 'nepremičnin'.")
 
-# for row in cursor:
-#     print(f"\tHits: {row[1]}\n\t\tDoc: '{row[0]}'\n\t\tIndexes: {row[2]}")
-#
+cursor = c.execute('''
+    SELECT p.documentName AS docName, SUM(frequency) AS freq, GROUP_CONCAT(indexes) AS idxs
+    FROM Posting p
+    WHERE
+        p.word IN ('trga', 'nepremičnin')
+    GROUP BY p.documentName
+    ORDER BY freq DESC;
+''')
+
+for row in cursor:
+    print(f"\tHits: {row[1]}\n\t\tDoc: '{row[0]}'\n\t\tIndexes: {row[2]}")
+
 
 # You should close the connection when stopped using the database.
 conn.close()

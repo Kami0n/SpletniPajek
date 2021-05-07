@@ -66,14 +66,46 @@ c = conn.cursor()
 
 for path, subdirs, files in os.walk(baseDir):
     for name in files:
-        htmlText += prepareText(os.path.join(path, name))
-        print(htmlText)
+        htmlText = prepareText(os.path.join(path, name))
+        besedePojavitve = dict()
+        besedeFrekvenca = dict()
+        i=0
+        for word in htmlText:
+            key = (word)
+            if word in besedePojavitve:
+                besedeFrekvenca[word] += 1
+            else:
+                besedeFrekvenca[word] = 1
 
-for word in htmlText:
-    key = (word)
-    c.execute('INSERT INTO IndexWord VALUES (?); ', [key])
+            if key in besedePojavitve:
+                # append the new number to the existing array at this slot
+                besedePojavitve[key].append(i)
+            else:
+                # create a new array in this slot
+                besedePojavitve[key] = []
+                besedePojavitve[key].append(i)
+
+            try:
+                c.execute('INSERT INTO IndexWord VALUES (?); ', [key])
+            except:
+                pass
+
+            i+=1
+
+        for key in besedeFrekvenca:
+            vnos = (key, name, besedeFrekvenca[key], str(besedePojavitve[key]))
+            try:
+                c.execute('INSERT INTO Posting VALUES (?, ?, ?, ?)', vnos)
+            except:
+                pass
+
+        print(besedePojavitve)
+        print(besedeFrekvenca)
+        # print(besedeFrekvenca['trga'])
+        # print(str(besedePojavitve['trga']))
 
 
+conn.commit()
 
 # pridobimo besedilo iz vsake spletne strani:
 # funkcija text na vsaki spletni strani
