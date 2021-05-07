@@ -64,6 +64,26 @@ baseDir = "../PA3-data"
 htmlText = []
 c = conn.cursor()
 
+try:
+    c.execute('''
+        CREATE TABLE IndexWord (
+            word TEXT PRIMARY KEY
+        );
+    ''')
+
+    c.execute('''
+        CREATE TABLE Posting (
+            word TEXT NOT NULL,
+            documentName TEXT NOT NULL,
+            frequency INTEGER NOT NULL,
+            indexes TEXT NOT NULL,
+            PRIMARY KEY(word, documentName),
+            FOREIGN KEY (word) REFERENCES IndexWord(word)
+        );
+    ''')
+except:
+    pass
+
 for path, subdirs, files in os.walk(baseDir):
     for name in files:
         htmlText = prepareText(os.path.join(path, name))
