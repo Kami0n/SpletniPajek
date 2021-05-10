@@ -1,6 +1,17 @@
 import sys
 import time
-import pickle
+import os
+#from bs4 import BeautifulSoup
+#from bs4.element import Comment
+#import urllib.request
+
+#from nltk.tokenize import LegalitySyllableTokenizer
+#from nltk import word_tokenize
+#from nltk.corpus import words
+
+#from stopwords import *  
+
+from buildingIndex import prepareText 
 
 # To get a feeling of a speed-up in search using an inverted index, implement searching without the SQLite database.
 # Instead of using the database, your algorithm should sequentially open each file, process it and merge the results.
@@ -15,12 +26,7 @@ def prepareSearchParams(searchParams):
     print('\nResults for a query: \"' + ' '.join(map(str, searchParams)) + '\"')
     
     searchParamsLow = [word.lower() for word in searchParams]
-    searchParamsString = ""
-    for word in searchParamsLow:
-        searchParamsString += "'"+word+"'"
-        if word != searchParamsLow[-1]:
-            searchParamsString +=","
-    return searchParamsString
+    return searchParamsLow
 
 def prepareSnippet(row, text_files):
     textFile = text_files[row[0]]
@@ -56,18 +62,28 @@ def prepareSnippet(row, text_files):
 
 def main():
     
-    pickleFileName = "pickleDict.pkl"
-    f = open(pickleFileName, "rb")
-    text_files = pickle.load(f)
-    f.close()
+    baseDir = "../PA3-data"
     
     t1 = time.time()
-    searchParamsString = prepareSearchParams(sys.argv[1:])
+    searchParams = prepareSearchParams(sys.argv[1:])
+    
+    documentsWithWord = {}
     
     # search 
     
-    
-    
+    for path, subdirs, files in os.walk(baseDir):
+        for name in files:
+            filePathFull = os.path.join(path, name)
+            filePath = filePathFull.replace(baseDir+"\\", '')
+            
+            htmlText = prepareText(filePathFull)
+            
+            for everyWord in htmlText:
+                if everyWord in searchParams:
+                    if name in documentsWithWord:
+                        documentsWithWord[name] += 1
+                    else:
+                        documentsWithWord[name] = 1
     
     # izpis
     timeTaken = round((time.time()-t1)*1000,3)
@@ -75,11 +91,14 @@ def main():
     print("\n\tFrequencies Document                                  Snippet")
     print("\t----------- ----------------------------------------- -----------------------------------------------------------")
     
-    for row in cursor:
-        print("\t%-5s       %-41s %s" % (row[1], row[0], prepareSnippet(row, text_files))) #row[2]
+    for row in documentsWithWord:
+        print("\t%-5s       %-41s %s" % (-1, row, "" )) #row[2]
     
     print("\n")
     
-    conn.close() # You should close the connection when stopped using the database.
-
-if __name__ == "__main__"
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        main()
+    else:
+        print("\nInput parameters empty!")
+        exit(-1)
