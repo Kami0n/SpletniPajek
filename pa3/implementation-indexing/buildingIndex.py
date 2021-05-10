@@ -87,6 +87,7 @@ def prepareText(filePath, enc='utf-8'):
 #     conn.commit()
 
 def main():
+    
     #baseDir = "../PA3-test"
     baseDir = "../PA3-data"
     htmlText = []
@@ -96,6 +97,7 @@ def main():
     text_files = {}
 
     try:
+        print("Creating database structure")
         c.execute('''
             CREATE TABLE IndexWord (
                 word TEXT PRIMARY KEY
@@ -113,8 +115,10 @@ def main():
             );
         ''')
     except:
+        print("Database structure already exists")
         pass
 
+    print("Building inverted index and pickle")
     for path, subdirs, files in os.walk(baseDir):
         for name in files:
             filePathFull = os.path.join(path, name)
@@ -122,8 +126,7 @@ def main():
             
             htmlText = prepareText(filePathFull)
             
-            
-            text_files[os.path.join(path, name)] = htmlText
+            text_files[filePath] = htmlText # for pickle
             
             besedePojavitve = dict()
             besedeFrekvenca = dict()
@@ -167,11 +170,12 @@ def main():
     conn.commit()
     # You should close the connection when stopped using the database.
     conn.close()
-
-    print("Saving pickle text dict!")
+    print("Inverted index commited to database")
+    
     f = open(pickleFileName, "wb")
     pickle.dump(text_files, f)
     f.close()
+    print("Pickle saved to file")
 
 if __name__ == "__main__":
     main()

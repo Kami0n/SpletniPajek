@@ -1,6 +1,7 @@
 import sys
 import time
 import sqlite3
+import pickle
 
 # Results for a query: "Sistem SPOT"
 # Results found in 4ms.
@@ -26,7 +27,36 @@ def prepareSearchParams(searchParams):
             searchParamsString +=","
     return searchParamsString
 
+def prepareSnippet(row, text_files):
+    textFile = text_files[row[0]]
+    
+    indexes = list(row[2].replace(" ", "").split(",")) # get all indexes from row[2]
+    indexes = list(map(int, indexes))
+    
+    snippet = ""
+    
+    # 3 words before, 3 after
+    for index in indexes:
+        
+        snippet += "... "
+        snippet += textFile[index-3]+" "
+        snippet += textFile[index-2]+" "
+        snippet += textFile[index-1]+" "
+        snippet += textFile[index]+" "
+        snippet += textFile[index+1]+" "
+        snippet += textFile[index+2]+" "
+        snippet += textFile[index+3]+" "
+        snippet += "... "
+    
+    return snippet
+
 def main():
+    
+    pickleFileName = "pickleDict.pkl"
+    f = open(pickleFileName, "rb")
+    text_files = pickle.load(f)
+    f.close()
+    
     t1 = time.time()
     searchParamsString = prepareSearchParams(sys.argv[1:])
     
@@ -40,24 +70,19 @@ def main():
         ORDER BY freq DESC;
     ''')
     
-    
-    
-    
-    
-    
     # izpis
+    
+    
+    
+    
+    
     timeTaken = round((time.time()-t1)*1000,3)
     print(f'\n\tResults found in {timeTaken} ms')
     print("\n\tFrequencies Document                                  Snippet")
     print("\t----------- ----------------------------------------- -----------------------------------------------------------")
     
     for row in cursor:
-        #print(f"\tHits: {row[1]}\n\t\tDoc: '{row[0]}'\n\t\tIndexes: {row[2]}")
-        print("\t%-5s       %-41s %s" % (row[1], row[0], row[2]))
-        pass
-    
-    #for e in s:
-    #    print("%-5s       %-41s %s" % (e[0], e[1], e[2]))
+        print("\t%-5s       %-41s %s" % (row[1], row[0], prepareSnippet(row, text_files))) #row[2]
     
     print("\n")
     
