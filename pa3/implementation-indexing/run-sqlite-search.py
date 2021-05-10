@@ -80,11 +80,6 @@ def main():
     ''')
     
     # izpis
-    
-    
-    
-    
-    
     timeTaken = round((time.time()-t1)*1000,3)
     print(f'\n\tResults found in {timeTaken} ms')
     print("\n\tFrequencies Document                                  Snippet")
