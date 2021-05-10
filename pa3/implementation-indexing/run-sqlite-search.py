@@ -41,12 +41,12 @@ def main():
     ''')
     
     
-    # You should close the connection when stopped using the database.
+    
     
     
     
     # izpis
-    timeTaken = (time.time()-t1)*1000
+    timeTaken = round((time.time()-t1)*1000,3)
     print(f'\n\tResults found in {timeTaken} ms')
     print("\n\tFrequencies Document                                  Snippet")
     print("\t----------- ----------------------------------------- -----------------------------------------------------------")
@@ -61,7 +61,7 @@ def main():
     
     print("\n")
     
-    conn.close()
+    conn.close() # You should close the connection when stopped using the database.
 
 if __name__ == "__main__":
     main()
