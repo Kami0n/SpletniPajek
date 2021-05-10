@@ -38,14 +38,23 @@ def prepareSnippet(row, text_files):
     # 3 words before, 3 after
     for index in indexes:
         
-        snippet += "... "
-        snippet += textFile[index-3]+" "
-        snippet += textFile[index-2]+" "
-        snippet += textFile[index-1]+" "
+        if(not snippet.endswith("... ")):
+            snippet += "... "
+        if(textFile[index-3]):
+            snippet += textFile[index-3]+" "
+        if(textFile[index-2]):
+            snippet += textFile[index-2]+" "
+        if(textFile[index-1]):
+            snippet += textFile[index-1]+" "
+        
         snippet += textFile[index]+" "
-        snippet += textFile[index+1]+" "
-        snippet += textFile[index+2]+" "
-        snippet += textFile[index+3]+" "
+        
+        if(textFile[index+1]):
+            snippet += textFile[index+1]+" "
+        if(textFile[index+2]):
+            snippet += textFile[index+2]+" "
+        if(textFile[index+3]):
+            snippet += textFile[index+3]+" "
         snippet += "... "
     
     return snippet
@@ -89,4 +98,8 @@ def main():
     conn.close() # You should close the connection when stopped using the database.
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1:
+        main()
+    else:
+        print("\nInput parameters empty!")
+        exit(-1)
