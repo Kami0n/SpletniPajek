@@ -22,9 +22,6 @@ from buildingIndex import prepareText
 
 
 def prepareSearchParams(searchParams):
-    
-    print('\nResults for a query: \"' + ' '.join(map(str, searchParams)) + '\"')
-    
     searchParamsLow = [word.lower() for word in searchParams]
     return searchParamsLow
 
@@ -65,34 +62,55 @@ def main():
     baseDir = "../PA3-data"
     
     t1 = time.time()
-    searchParams = prepareSearchParams(sys.argv[1:])
+    
+    
+    searchParamsDisplay = sys.argv[1:]
+    searchParams = prepareSearchParams(searchParamsDisplay)
     
     documentsWithWord = {}
+    snippets = {}
     
     # search 
-    
     for path, subdirs, files in os.walk(baseDir):
         for name in files:
             filePathFull = os.path.join(path, name)
             filePath = filePathFull.replace(baseDir+"\\", '')
-            
             htmlText = prepareText(filePathFull)
-            
+            stevec = 0
             for everyWord in htmlText:
                 if everyWord in searchParams:
                     if name in documentsWithWord:
                         documentsWithWord[name] += 1
                     else:
                         documentsWithWord[name] = 1
+                    
+                    
+                    if name not in snippets:
+                        snippets[name] = ""
+                    
+                    if(not snippets[name].endswith("... ")):
+                         snippets[name] += "... "
+                    snippets[name] += everyWord
+                    snippets[name] += " ... "
+                        
+                    
+                stevec += 1
+                
+                
+    
+    
+    documentsWithWordSorted = dict(sorted(documentsWithWord.items(), key=lambda x: x[1], reverse=True))
     
     # izpis
+    print('\nResults for a query: \"' + ' '.join(map(str, searchParamsDisplay)) + '\"')
+    
     timeTaken = round((time.time()-t1)*1000,3)
     print(f'\n\tResults found in {timeTaken} ms')
     print("\n\tFrequencies Document                                  Snippet")
     print("\t----------- ----------------------------------------- -----------------------------------------------------------")
     
-    for row in documentsWithWord:
-        print("\t%-5s       %-41s %s" % (-1, row, "" )) #row[2]
+    for filename in documentsWithWordSorted:
+        print("\t%-5s       %-41s %s" % (documentsWithWord[filename], filename, snippets[filename] )) #row[2]
     
     print("\n")
     
