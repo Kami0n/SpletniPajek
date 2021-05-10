@@ -113,7 +113,7 @@ for path, subdirs, files in os.walk(baseDir):
             i+=1
 
         for key in besedeFrekvenca:
-            vnos = (key, name, besedeFrekvenca[key], str(besedePojavitve[key]))
+            vnos = (key, name, besedeFrekvenca[key], str(besedePojavitve[key])[1:-1])
             try:
                 c.execute('INSERT INTO Posting VALUES (?, ?, ?, ?)', vnos)
             except:
