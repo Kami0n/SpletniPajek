@@ -1,2 +1,4 @@
 implementation-indexing/__pycache__
 .vscode
+implementation-indexing/inverted-index.db
+implementation-indexing/test.py
