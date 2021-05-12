@@ -123,8 +123,6 @@ def main():
 
             htmlText = prepareText(filePathFull)
 
-            text_files[filePath] = htmlText  # for pickle
-
             besedePojavitve = dict()
             besedeFrekvenca = dict()
             i = 0
@@ -144,6 +142,9 @@ def main():
 
             # dejanski indeksi besed
             htmlTextAll = prepareTextAll(filePathFull)
+            
+            text_files[filePath] = htmlTextAll  # for pickle
+            
             i = 0
             for word in htmlTextAll:
                 key = (word)
