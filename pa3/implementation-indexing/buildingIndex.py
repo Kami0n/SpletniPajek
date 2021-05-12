@@ -88,8 +88,8 @@ def prepareText(filePath, enc='utf-8'):
 
 def main():
     
-    #baseDir = "../PA3-test"
-    baseDir = "../PA3-data"
+    baseDir = "../PA3-test"
+    # baseDir = "../PA3-data"
     htmlText = []
     c = conn.cursor()
 
