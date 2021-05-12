@@ -2,6 +2,7 @@ import sys
 import time
 import sqlite3
 import pickle
+import itertools
 
 # Results for a query: "Sistem SPOT"
 # Results found in 4ms.
@@ -27,36 +28,80 @@ def prepareSearchParams(searchParams):
             searchParamsString +=","
     return searchParamsString
 
-def prepareSnippet(row, text_files):
-    textFile = text_files[row[0]]
+
+locila = [  "(", ")", ".", ",", ";", ":", "!", "?", "©", "•", "-", "/", "|",
+            "-", "+", "--", "---", "\\", ">", "<", "@", "[", "]", "=", "»",
+            "«", "&", "'", "...", "''"," ","   ","★", "☆", "▼", "--", "–", "``"
+        ]
+
+okolicaSnippet = 3
+
+def wordsBeforeAfter(index, textFile, before=True, okolica=okolicaSnippet):
+    vmes = okolica != okolicaSnippet
     
-    indexes = list(row[2].replace(" ", "").split(",")) # get all indexes from row[2]
-    indexes = list(map(int, indexes))
+    tmpSnippet = ""
+    steviloBesed = 0
+    ind = 0
+    while steviloBesed < okolica: # 3 words before, 3 after
+        ind += 1
+        newIndex = -1
+        
+        if before:
+            newIndex = index - ind
+            if newIndex < 0:
+                break
+        else:
+            newIndex = index + ind
+            if index + ind > len(textFile):
+                break
+        
+        delcek = textFile[newIndex]
+        if delcek.isalnum() or vmes: # ce je polnopravna beseda ali stevilka, povecaj ali pa ce gre za vmes
+            steviloBesed += 1
+        
+        if before:
+            if delcek in locila:
+                tmpSnippet = delcek + tmpSnippet
+            else:
+                tmpSnippet = " "+delcek + tmpSnippet
+        else:
+            if delcek in locila:
+                tmpSnippet += delcek
+            else:
+                tmpSnippet += " "+delcek
+            
+    return tmpSnippet
+
+def prepareSnippet(row, textFile):
+    
+    indexesTmp = list(row[2].replace(" ", "").split(",")) # get all indexes from row[2]
+    indexes = list(map(int, indexesTmp))
+    indexes.sort()
     
     snippet = ""
+    vmes = -1
     
-    # 3 words before, 3 after
-    for index in indexes:
+    for idx, index in enumerate(indexes):
         
-        if(not snippet.endswith("... ")):
-            snippet += "... "
-        if(textFile[index-3]):
-            snippet += textFile[index-3]+" "
-        if(textFile[index-2]):
-            snippet += textFile[index-2]+" "
-        if(textFile[index-1]):
-            snippet += textFile[index-1]+" "
+        if vmes == -1: # ni skupaj, izpisi predhodne 3 besede
+            if(not snippet.endswith("...")):
+                snippet += "..."
+            snippet += wordsBeforeAfter(index, textFile, True)
+            snippet += " "+textFile[index]
+           
+        else: # ce je skupaj izpisi vse besede do
+            snippet += wordsBeforeAfter(index, textFile, True, okolica=vmes)
+            snippet += " "+textFile[index]
+            vmes = -1
         
-        snippet += textFile[index]+" "
+        if idx+1 < len(indexes) and indexes[idx+1] - index <= (okolicaSnippet*2)+2: # +2 za iskani besedi
+            vmes = indexes[idx+1] - index
+            vmes -= 1
+        else:
+            vmes = -1
+            snippet += wordsBeforeAfter(index, textFile, False)
+            snippet += " ..."
         
-        if(textFile[index+1]):
-            snippet += textFile[index+1]+" "
-        if(textFile[index+2]):
-            snippet += textFile[index+2]+" "
-        if(textFile[index+3]):
-            snippet += textFile[index+3]+" "
-        snippet += "... "
-    
     return snippet
 
 def main():
@@ -86,7 +131,7 @@ def main():
     print("\t----------- ----------------------------------------- -----------------------------------------------------------")
     
     for row in cursor:
-        print("\t%-5s       %-41s %s" % (row[1], row[0], prepareSnippet(row, text_files))) #row[2]
+        print("\t%-5s       %-41s %s" % (row[1], row[0], prepareSnippet(row, text_files[row[0]]))) #row[2]
     
     print("\n")
     
