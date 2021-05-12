@@ -32,7 +32,7 @@ locila = [  "(", ")", ".", ",", ";", ":", "!", "?", "©", "•", "-", "/", "|",
 
 okolicaSnippet = 3
 
-def wordsBeforeAfter(index, textFile, before=True, okolica=okolicaSnippet):
+def wordsBeforeAfter(index, textFile, okolica=okolicaSnippet):
     vmes = okolica != okolicaSnippet
     
     tmpSnippet = ""
@@ -42,29 +42,19 @@ def wordsBeforeAfter(index, textFile, before=True, okolica=okolicaSnippet):
         ind += 1
         newIndex = -1
         
-        if before:
-            newIndex = index - ind
-            if newIndex < 0:
-                break
-        else:
-            newIndex = index + ind
-            if index + ind > len(textFile):
-                break
+        newIndex = index - ind
+        if newIndex < 0:
+            break
         
         delcek = textFile[newIndex]
         if delcek.isalnum() or vmes: # ce je polnopravna beseda ali stevilka, povecaj ali pa ce gre za vmes
             steviloBesed += 1
         
-        if before:
-            if delcek in locila:
-                tmpSnippet = delcek + tmpSnippet
-            else:
-                tmpSnippet = " "+delcek + tmpSnippet
+        if delcek in locila:
+            tmpSnippet = delcek + tmpSnippet
         else:
-            if delcek in locila:
-                tmpSnippet += delcek
-            else:
-                tmpSnippet += " "+delcek
+            tmpSnippet = " "+delcek + tmpSnippet
+    
             
     return tmpSnippet
 
@@ -105,26 +95,28 @@ def main():
                     if name not in snippets:
                         snippets[name] = ""
                     
-                    if idx - tmpIndex < 6:
-                        vmes = idx - tmpIndex -1
                     
-                    if vmes == -1: # ni skupaj, izpisi predhodne 3 besede
+                    if not zapisovanje:
                         if(not snippets[name].endswith("...")):
                             snippets[name] += "..."
                         snippets[name] += wordsBeforeAfter(idx, htmlTextAll)
-                        tmpIndex = idx
-                        zapisovanje = True
                     
-                    else: # ce je skupaj izpisi vse besede do
-                        snippets[name] += wordsBeforeAfter(idx, htmlTextAll, True, okolica=vmes)
-                        zapisovanje = True
-                        vmes = -1
+                    tmpIndex = idx
+                    zapisovanje = True
                 
                 if zapisovanje:
-                    if idx - tmpIndex > 3:
-                        zapisovanje = False
+                    
+                    if not snippets[name].isalnum():
+                        if idx - tmpIndex > 4:
+                            zapisovanje = False
+                        else:
+                            snippets[name] += " "+htmlTextAll[idx]
                     else:
-                        snippets[name] += " "+htmlTextAll[idx]
+                        snippets[name] += htmlTextAll[idx]
+                        tmpIndex += 1
+                    
+                    
+                    
                 
     
     documentsWithWordSorted = dict(sorted(besedeFrekvenca.items(), key=lambda x: x[1], reverse=True))
