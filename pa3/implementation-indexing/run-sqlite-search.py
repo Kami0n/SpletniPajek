@@ -2,7 +2,7 @@ import sys
 import time
 import sqlite3
 import pickle
-import itertools
+import string
 
 # Results for a query: "Sistem SPOT"
 # Results found in 4ms.
@@ -29,14 +29,21 @@ def prepareSearchParams(searchParams):
     return searchParamsString
 
 
-locila = [  "(", ")", ".", ",", ";", ":", "!", "?", "©", "•", "-", "/", "|",
-            "-", "+", "--", "---", "\\", ">", "<", "@", "[", "]", "=", "»",
-            "«", "&", "'", "...", "''"," ","   ","★", "☆", "▼", "--", "–", "``"
-        ]
+levaLocila = [
+    "(", "»","[", "<", 
+]
+
+desnaLocila = [
+    ")", ".", ",", ";", ":", "!", "?", "«","]",">",
+]
+
+ostalaLocila = [
+    "©", "•", "-", "/", "|", "-", "+", "--", "---", "\\", "@", "=", 
+    "&", "'", "...", "''","★", "☆", "▼", "--", "–", "``"
+]
 
 okolicaSnippet = 3
-
-def wordsBeforeAfter(index, textFile, before=True, okolica=okolicaSnippet):
+def wordsBeforeAfterOld(index, textFile, before=True, okolica=okolicaSnippet):
     vmes = okolica != okolicaSnippet
     
     tmpSnippet = ""
@@ -56,23 +63,25 @@ def wordsBeforeAfter(index, textFile, before=True, okolica=okolicaSnippet):
                 break
         
         delcek = textFile[newIndex]
-        if delcek.isalnum() or vmes: # ce je polnopravna beseda ali stevilka, povecaj ali pa ce gre za vmes
+        
+        #if delcek.isalnum() or vmes: # ce je polnopravna beseda ali stevilka, povecaj ali pa ce gre za vmes
+        if delcek not in string.punctuation or vmes:
             steviloBesed += 1
         
         if before:
-            if delcek in locila:
+            if delcek in string.punctuation:
                 tmpSnippet = delcek + tmpSnippet
             else:
                 tmpSnippet = " "+delcek + tmpSnippet
         else:
-            if delcek in locila:
+            if delcek in string.punctuation:
                 tmpSnippet += delcek
             else:
                 tmpSnippet += " "+delcek
             
     return tmpSnippet
 
-def prepareSnippet(row, textFile):
+def prepareSnippetOld(row, textFile):
     
     indexesTmp = list(row[2].replace(" ", "").split(",")) # get all indexes from row[2]
     indexes = list(map(int, indexesTmp))
@@ -87,12 +96,11 @@ def prepareSnippet(row, textFile):
             if(not snippet.endswith("...")):
                 snippet += "..."
             snippet += wordsBeforeAfter(index, textFile, True)
-            snippet += " "+textFile[index]
-           
         else: # ce je skupaj izpisi vse besede do
             snippet += wordsBeforeAfter(index, textFile, True, okolica=vmes)
-            snippet += " "+textFile[index]
             vmes = -1
+            
+        snippet += " "+textFile[index]
         
         if idx+1 < len(indexes) and indexes[idx+1] - index <= (okolicaSnippet*2)+2: # +2 za iskani besedi
             vmes = indexes[idx+1] - index
@@ -101,8 +109,91 @@ def prepareSnippet(row, textFile):
             vmes = -1
             snippet += wordsBeforeAfter(index, textFile, False)
             snippet += " ..."
-        
+    
+    
     return snippet
+
+
+def wordsBeforeAfter(index, textFile, before=True, okolica=okolicaSnippet):
+    vmes = okolica != okolicaSnippet
+    
+    tmpSnippet = []
+    steviloBesed = 0
+    ind = 0
+    while steviloBesed < okolica: # 3 words before, 3 after
+        ind += 1
+        newIndex = -1
+        
+        if before:
+            newIndex = index - ind
+            if newIndex < 0:
+                break
+        else:
+            newIndex = index + ind
+            if index + ind > len(textFile):
+                break
+        
+        delcek = textFile[newIndex]
+        
+        #if delcek.isalnum() or vmes: # ce je polnopravna beseda ali stevilka, povecaj ali pa ce gre za vmes
+        if delcek not in string.punctuation or vmes:
+            steviloBesed += 1
+        
+        
+        
+        if before:
+            #if delcek in string.punctuation:
+            #    tmpSnippet = delcek + tmpSnippet
+            #else:
+            #    tmpSnippet = " "+delcek + tmpSnippet
+            tmpSnippet.insert(0, delcek)
+        else:
+            #if delcek in string.punctuation:
+            #    tmpSnippet += delcek
+            #else:
+            #    tmpSnippet += " "+delcek
+            tmpSnippet.append(delcek)
+            
+    return tmpSnippet
+
+def prepareSnippet(row, textFile):
+    
+    indexesTmp = list(row[2].replace(" ", "").split(",")) # get all indexes from row[2]
+    indexes = list(map(int, indexesTmp))
+    indexes.sort()
+    
+    snippetArr = []
+    vmes = -1
+    
+    for idx, index in enumerate(indexes):
+        if vmes == -1: # ni skupaj, izpisi predhodne 3 besede
+            if len(snippetArr) == 0 or snippetArr[-1] != "...":
+                snippetArr.append("...")
+            snippetArr.extend(wordsBeforeAfter(index, textFile, True)) #extend
+        else: # ce je skupaj izpisi vse besede do
+            snippetArr.extend(wordsBeforeAfter(index, textFile, True, okolica=vmes))
+            vmes = -1
+        snippetArr.append(textFile[index])
+        
+        if idx+1 < len(indexes) and indexes[idx+1] - index <= (okolicaSnippet*2)+2: # +2 za iskani besedi
+            vmes = indexes[idx+1] - index
+            vmes -= 1
+        else:
+            vmes = -1
+            snippetArr.extend(wordsBeforeAfter(index, textFile, False))
+            snippetArr.append("...")
+    
+    snippet = ""
+    for elem in snippetArr:
+        if elem in desnaLocila:
+            snippet += elem
+        elif len(snippet) > 0 and snippet[-1] in levaLocila:
+            snippet +=  elem
+        else:
+            snippet +=  " "+elem
+    
+    return snippet
+
 
 def main():
     
