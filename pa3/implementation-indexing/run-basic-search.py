@@ -61,7 +61,7 @@ def wordsBeforeAfter(index, textFile, okolica=okolicaSnippet):
 def main():
     
     baseDir = "../PA3-data"
-    baseDir = "../PA3-test"
+  #  baseDir = "../PA3-test"
     
     t1 = time.time()
     

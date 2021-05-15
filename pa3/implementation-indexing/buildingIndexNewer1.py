@@ -41,6 +41,15 @@ def tagVisible(element):
     return True
 
 
+def containsChar(niz):
+    if niz.isnumeric():
+        return False
+    for znak in niz:
+        if znak.isalpha():
+            return True
+    return False
+
+
 def textFromHtml(body):
     soup = BeautifulSoup(body, 'lxml')
     texts = soup.findAll(text=True)
@@ -57,7 +66,16 @@ def prepareText(filePath, enc='utf-8'):
     textLower = textStarting.lower() # lower case
     word_tokens = word_tokenize(textLower) # tokenization
     filtered_sentence = [w for w in word_tokens if not w in stop_words_slovene] # stop word removal
-    
+
+    # removes numbers, links, appostrofs,
+    for index, w in enumerate(filtered_sentence):
+        if containsChar(w) is False:
+            filtered_sentence.pop(index)
+        if w[0] == '/':
+            filtered_sentence.pop(index)
+        if w[0] == "'":
+            filtered_sentence[index] = w[1:]
+
     return filtered_sentence, word_tokens_all
 
 def main():
@@ -115,6 +133,8 @@ def main():
             index = 0
             for word in htmlTextAll:
                 wordLow = word.lower()
+                if wordLow[0] == "'":
+                    wordLow = wordLow[1:]
                 key = (wordLow)
                 if wordLow in besedeFrekvenca:
                     if key not in besedePojavitve:

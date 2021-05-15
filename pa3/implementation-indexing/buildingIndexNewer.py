@@ -57,6 +57,14 @@ def textFromHtml(body):
     return u" ".join(t.strip() for t in visible_texts)
 
 
+def containsChar(niz):
+    flag = False
+    for znak in niz:
+        if znak.isalpha():
+            flag = True
+    return flag
+
+
 def prepareText(filePath, enc='utf-8'):
     htmlFile = open(filePath, 'r', encoding=enc)
     textStarting = textFromHtml(htmlFile.read())
@@ -69,6 +77,7 @@ def prepareText(filePath, enc='utf-8'):
 
     # stop word removal
     filtered_sentence = [w for w in word_tokens if not w in stop_words_slovene]
+
     return filtered_sentence
 
 
