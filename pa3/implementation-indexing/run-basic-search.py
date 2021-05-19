@@ -34,6 +34,8 @@ locilaLS = [")", ".", ",", ";", ":", "!", "?", "/", ">", "]", "=", "«", "...", 
 
 locilaDS = ["(", "<", "[", "«"]
 
+locilaBS = ["©","@"]
+
 okolicaSnippet = 3
 
 
@@ -57,16 +59,21 @@ def wordsBeforeAfter(index, textFile, okolica=okolicaSnippet):
 
         if delcek in locilaLS:
             tmpSnippet = delcek + tmpSnippet
-        # elif delcek in locilaDS:
-        #     tmpSnippet = delcek + " " + tmpSnippet
+        elif delcek in locilaBS and tmpSnippet[0] is " ":
+            tmpSnippet = tmpSnippet[1:]
+            tmpSnippet = delcek + tmpSnippet
         else:
-            tmpSnippet = " " + delcek + tmpSnippet
+            if delcek in locilaDS or delcek in locilaBS:
+                tmpSnippet = delcek + tmpSnippet
+            else:
+                tmpSnippet = " " + delcek + tmpSnippet
+            
 
     return tmpSnippet
 
 
 def main():
-    # baseDir = "../PA3-data"
+    #baseDir = "../PA3-data"
     baseDir = "../PA3-test"
 
     t1 = time.time()
@@ -114,12 +121,13 @@ def main():
                         if idx - tmpIndex > 4:
                             zapisovanje = False
                         else:
-                            if word in locilaLS:
+                            if word in locilaLS or word in locilaBS:
                                 snippets[name] += htmlTextAll[idx]
-                            # elif word in locilaDS:
-                            #     snippets[name] = htmlTextAll[idx] + " " + snippets[name]
                             else:
-                                snippets[name] += " " + htmlTextAll[idx]
+                                if snippets[name][-1] in locilaDS or snippets[name][-1] in locilaBS:
+                                    snippets[name] += htmlTextAll[idx]
+                                else:
+                                    snippets[name] += " " + htmlTextAll[idx]
 
                     else:
                         snippets[name] += htmlTextAll[idx]
