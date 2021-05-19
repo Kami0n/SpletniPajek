@@ -27,10 +27,10 @@ def prepareSearchParams(searchParams):
     return searchParamsLow
 
 
-locila = ["©", "•", "-", "|", "-", "+", "--", "---", "\\", "@", "=", "&", "'", "''", " ", "   ", "★", "☆", "▼", "--",
+locila = ["©", "•", "-", "|", "-", "+", "--", "---", "\\", "@", "=", "&", "''", "'", " ", "   ", "★", "☆", "▼", "--",
           "–", "``"]
 
-locilaLS = [")", ".", ",", ";", ":", "!", "?", "/", ">", "]", "=", "«", "..."]
+locilaLS = [")", ".", ",", ";", ":", "!", "?", "/", ">", "]", "=", "«", "...", "’"]
 
 locilaDS = ["(", "<", "[", "«"]
 
@@ -57,6 +57,8 @@ def wordsBeforeAfter(index, textFile, okolica=okolicaSnippet):
 
         if delcek in locilaLS:
             tmpSnippet = delcek + tmpSnippet
+        # elif delcek in locilaDS:
+        #     tmpSnippet = delcek + " " + tmpSnippet
         else:
             tmpSnippet = " " + delcek + tmpSnippet
 
@@ -114,6 +116,8 @@ def main():
                         else:
                             if word in locilaLS:
                                 snippets[name] += htmlTextAll[idx]
+                            # elif word in locilaDS:
+                            #     snippets[name] = htmlTextAll[idx] + " " + snippets[name]
                             else:
                                 snippets[name] += " " + htmlTextAll[idx]
 
