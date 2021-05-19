@@ -9,7 +9,7 @@ import os
 # from nltk import word_tokenize
 # from nltk.corpus import words
 
-# from stopwords import *
+from stopwords import *
 
 from buildingIndexNewer1 import prepareText
 
@@ -98,7 +98,7 @@ def main():
             for idx, everyWord in enumerate(htmlTextAll):
                 word = everyWord.lower()
 
-                if word in searchParams:
+                if word in searchParams and word not in stop_words_slovene:
 
                     if name not in besedeFrekvenca:
                         besedeFrekvenca[name] = 0

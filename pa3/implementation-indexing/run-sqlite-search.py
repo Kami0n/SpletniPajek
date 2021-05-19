@@ -42,6 +42,8 @@ ostalaLocila = [
     "&", "'", "...", "''","★", "☆", "▼", "--", "–", "``"
 ]
 
+locilaBS = ["©","@"]
+
 okolicaSnippet = 3
 def wordsBeforeAfterOld(index, textFile, before=True, okolica=okolicaSnippet):
     vmes = okolica != okolicaSnippet
@@ -191,6 +193,9 @@ def prepareSnippet(row, textFile):
             snippet +=  elem
         else:
             snippet +=  " "+elem
+
+    for locilo in locilaBS:
+         snippet = snippet.replace(" "+locilo+" ", locilo)
     
     return snippet
 
