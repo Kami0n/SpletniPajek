@@ -42,6 +42,16 @@ ostalaLocila = [
     "&", "'", "...", "''","★", "☆", "▼", "--", "–", "``"
 ]
 
+locila = ["©", "•", "-", "|", "-", "+", "--", "---", "\\", "@", "=", "&", "''", "'", " ", "   ", "★", "☆", "▼", "--",
+          "–", "``"]
+
+locilaLS = [")", ".", ",", ";", ":", "!", "?", "/", ">", "]", "=", "«", "...", "’"]
+
+locilaDS = ["(", "<", "[", "«"]
+
+locilaBS = ["©","@"]
+
+
 okolicaSnippet = 3
 def wordsBeforeAfterOld(index, textFile, before=True, okolica=okolicaSnippet):
     vmes = okolica != okolicaSnippet
@@ -183,16 +193,20 @@ def prepareSnippet(row, textFile):
             snippetArr.extend(wordsBeforeAfter(index, textFile, False))
             snippetArr.append("...")
     
-    snippet = ""
-    for elem in snippetArr:
-        if elem in desnaLocila:
-            snippet += elem
-        elif len(snippet) > 0 and snippet[-1] in levaLocila:
-            snippet +=  elem
+    tmpSnippet = ""
+    for delcek in snippetArr:
+        if delcek in locilaLS:
+            tmpSnippet = delcek + tmpSnippet
+        elif delcek in locilaBS and tmpSnippet[0] == " ":
+            tmpSnippet = tmpSnippet[1:]
+            tmpSnippet = delcek + tmpSnippet
         else:
-            snippet +=  " "+elem
+            if delcek in locilaDS or delcek in locilaBS:
+                tmpSnippet = delcek + tmpSnippet
+            else:
+                tmpSnippet = " " + delcek + tmpSnippet
     
-    return snippet
+    return tmpSnippet
 
 
 def main():

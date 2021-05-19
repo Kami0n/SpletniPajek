@@ -59,7 +59,7 @@ def wordsBeforeAfter(index, textFile, okolica=okolicaSnippet):
 
         if delcek in locilaLS:
             tmpSnippet = delcek + tmpSnippet
-        elif delcek in locilaBS and tmpSnippet[0] is " ":
+        elif delcek in locilaBS and tmpSnippet[0] == " ":
             tmpSnippet = tmpSnippet[1:]
             tmpSnippet = delcek + tmpSnippet
         else:
@@ -73,8 +73,8 @@ def wordsBeforeAfter(index, textFile, okolica=okolicaSnippet):
 
 
 def main():
-    #baseDir = "../PA3-data"
-    baseDir = "../PA3-test"
+    baseDir = "../PA3-data"
+    # baseDir = "../PA3-test"
 
     t1 = time.time()
 
