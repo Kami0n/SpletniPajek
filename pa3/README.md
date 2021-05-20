@@ -10,6 +10,12 @@ pip install -r requirements.txt
 ## Running indexing
 
 Move to folder `pa3` and run:
+
+Building index database:
+```
+./implementation-indexing/buildingIndexNewer1.py
+```
+
 For basic search:
 
 ```
