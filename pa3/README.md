@@ -16,6 +16,7 @@ For building index database (not necessary, database is already built):
 ./implementation-indexing/buildingIndexNewer1.py
 ```
 
+## Searching
 For basic search:
 ```
 ./implementation-indexing/run-basic-search.py "SEARCH_PARAMS"
