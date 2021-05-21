@@ -9,20 +9,19 @@ pip install -r requirements.txt
 
 ## Running indexing
 
-Move to folder `pa3` and run:
+Move to folder `pa3/implementation-indexing` and run:
 
-Building index database:
+For building index database (not necessary, database is already built):
 ```
 ./implementation-indexing/buildingIndexNewer1.py
 ```
 
 For basic search:
-
 ```
-./implementation-indexing/run-basic-search.py SEARCH_PARAM
+./implementation-indexing/run-basic-search.py "SEARCH_PARAMS"
 ```
 
 For search with inverted index (SQLite):
 ```
-./implementation-indexing/run-sqlite-search.py SEARCH_PARAM
+./implementation-indexing/run-sqlite-search.py "SEARCH_PARAMS"
 ```
