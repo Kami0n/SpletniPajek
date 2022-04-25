@@ -1,4 +1,4 @@
-# Python spletni pajek
+# Python web crawler
 
-### EKIPA: ieps-vipavska-burja
+### Team: ieps-vipavska-burja
 Matjaž Rupnik & Blaž Ličen
